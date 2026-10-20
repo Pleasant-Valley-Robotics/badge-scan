@@ -1,0 +1,16 @@
+@page "/error"
+@attribute [IgnoreAntiforgeryToken]
+@{
+    // Shown when something breaks on the live site (Program.cs sends visitors here).
+    // You can change the words; leave the @page, @attribute and StatusCode lines as they are.
+    ViewData["Title"] = "Something went wrong";
+    Response.StatusCode = 500;
+}
+<section class="section">
+    <div class="container">
+        <span class="eyebrow">500</span>
+        <h1>Something went wrong.</h1>
+        <p class="lede">Our robot hit a snag. Please try again in a minute.</p>
+        <a class="btn btn--primary" href="/">Back to home</a>
+    </div>
+</section>

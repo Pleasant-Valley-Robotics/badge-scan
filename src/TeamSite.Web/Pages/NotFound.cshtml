@@ -1,0 +1,16 @@
+@page "/not-found"
+@attribute [IgnoreAntiforgeryToken]
+@{
+    // Shown when someone asks for a page that doesn't exist (Program.cs sends them here).
+    // You can change the words; leave the @page, @attribute and StatusCode lines as they are.
+    ViewData["Title"] = "Page not found";
+    Response.StatusCode = 404;
+}
+<section class="section">
+    <div class="container">
+        <span class="eyebrow">404</span>
+        <h1>This page drove off the field.</h1>
+        <p class="lede">The page you're looking for doesn't exist or has moved.</p>
+        <a class="btn btn--primary" href="/">Back to home</a>
+    </div>
+</section>

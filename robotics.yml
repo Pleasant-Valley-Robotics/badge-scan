@@ -1,0 +1,8 @@
+# Which address goes to which container. Read by the robotics server.
+#   main branch  -> https://dev-<team>.firstpvrobotics.com  (mentors only, a preview)
+#   tag v1.2.3   -> https://<team>.firstpvrobotics.com      (the live site)
+apps:
+  - path: /
+    port: 1
+    health: /healthz
+    public: true    # live site is open to everyone; the preview always needs a mentor password

@@ -1,0 +1,10 @@
+# How the robotics server runs this site. The server fills in ${PORT_1}
+# (from robotics.yml) at each release, for the preview and the live site.
+services:
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:${PORT_1}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    restart: unless-stopped

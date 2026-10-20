@@ -1,0 +1,27 @@
+# Runs on every pull request and every push to main. The code must build, every
+# test must pass, and the container the server runs must start and answer /healthz.
+# This only checks. The robotics server pulls and deploys by itself.
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build --configuration Release
+      - run: dotnet test --configuration Release --no-build
+      - name: Build the container the server will run
+        run: docker build -t site .
+      - name: Start it and ask its health check
+        run: |
+          docker run -d --name site -p 8080:8080 site
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && exit 0; sleep 1; done
+          docker logs site; exit 1
