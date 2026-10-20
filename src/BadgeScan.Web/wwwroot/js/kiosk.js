@@ -100,7 +100,8 @@
     } catch { /* the stream will fill it in */ }
   };
 
-  // ---- live updates: the server pushes every new scan ----
+  // ---- live updates: the list now, then the server pushes every new scan ----
+  load();
   const stream = new EventSource('/api/scans/stream');
   stream.addEventListener('scan', (e) => {
     const scan = JSON.parse(e.data);
