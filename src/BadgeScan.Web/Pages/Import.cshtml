@@ -1,0 +1,51 @@
+@page
+@model ImportModel
+@{
+    ViewData["Title"] = "Import";
+}
+<section class="section">
+    <div class="container narrow">
+        <div class="section-head">
+            <span class="eyebrow">From a spreadsheet</span>
+            <h2>Import</h2>
+            <p class="muted">Save the sheet as CSV. The first line names the columns. Nothing here is ever deleted: a name that already exists is updated.</p>
+        </div>
+
+        @if (Model.Report is not null)
+        {
+            <div class="notice @(Model.Report.Problems.Count == 0 ? "notice--ok" : "notice--warn")" role="status">
+                <strong>@Model.Kind:</strong> @Model.Report.Imported added, @Model.Report.Updated updated, @Model.Report.Skipped skipped.
+                @if (Model.Report.Problems.Count > 0)
+                {
+                    <ul>
+                    @foreach (var p in Model.Report.Problems.Take(50))
+                    {
+                        <li>Line @p.Line: @p.Reason</li>
+                    }
+                    @if (Model.Report.Problems.Count > 50) { <li>…and @(Model.Report.Problems.Count - 50) more</li> }
+                    </ul>
+                }
+            </div>
+        }
+
+        <div class="grid grid--2">
+            <form method="post" enctype="multipart/form-data" class="card">
+                <input type="hidden" name="kind" value="badges" />
+                <h3>People and badges</h3>
+                <p class="muted">Columns: <code>name,team,badge</code>. Team blank means @AppInfo.DefaultTeam. Badge blank keeps whatever badge they have.</p>
+                <label>File <input type="file" name="file" accept=".csv,text/csv" /></label>
+                <label>…or paste <textarea name="text" rows="6" placeholder="name,team,badge&#10;Jane D.,7196,27"></textarea></label>
+                <button class="btn btn--primary btn--sm" type="submit">Import badges</button>
+            </form>
+
+            <form method="post" enctype="multipart/form-data" class="card">
+                <input type="hidden" name="kind" value="scans" />
+                <h3>Old scans</h3>
+                <p class="muted">Columns: <code>name,team,stamp</code>, the stamp like <code>Th10/08/2026|17:17</code>. A line imported before is skipped.</p>
+                <label>File <input type="file" name="file" accept=".csv,text/csv" /></label>
+                <label>…or paste <textarea name="text" rows="6" placeholder="name,team,stamp&#10;Jane D.,7196,Th10/08/2026|17:17"></textarea></label>
+                <button class="btn btn--primary btn--sm" type="submit">Import scans</button>
+            </form>
+        </div>
+    </div>
+</section>

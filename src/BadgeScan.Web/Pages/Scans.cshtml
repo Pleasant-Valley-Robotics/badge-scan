@@ -1,0 +1,48 @@
+@page
+@model ScansModel
+@{
+    ViewData["Title"] = "Scans";
+    var csv = $"/scans.csv?date={Model.From:yyyy-MM-dd}&to={Model.Until:yyyy-MM-dd}{(Model.Team is null ? "" : $"&team={Model.Team}")}";
+}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Every scan, UTC and Central</span>
+            <h2>Scans</h2>
+        </div>
+
+        <form method="get" class="toolbar">
+            <label>From <input type="date" name="date" value="@Model.From.ToString("yyyy-MM-dd")" /></label>
+            <label>To <input type="date" name="to" value="@Model.Until.ToString("yyyy-MM-dd")" /></label>
+            <label>Team <input type="number" name="team" min="1" value="@(Model.Team?.ToString())" placeholder="all" /></label>
+            <button class="btn btn--ghost btn--sm" type="submit">Show</button>
+            <a class="btn btn--primary btn--sm" href="@csv">Download CSV</a>
+        </form>
+
+        @if (Model.Scans.Count == 0)
+        {
+            <p class="muted">No scans between @Model.From.ToString("MMM d, yyyy") and @Model.Until.ToString("MMM d, yyyy").</p>
+        }
+        else
+        {
+            <p class="muted">@Model.Scans.Count scans, newest first.</p>
+            <table class="table">
+                <thead><tr><th>Stamp</th><th>Name</th><th>Team</th><th>Badge</th><th>Check-in</th><th>Central</th><th>UTC</th></tr></thead>
+                <tbody>
+                @foreach (var s in Model.Scans)
+                {
+                    <tr class="@(s.Recognised ? "" : "is-unknown")">
+                        <td><code>@s.Stamp</code></td>
+                        <td>@(s.Name ?? "unknown badge")</td>
+                        <td class="muted">@s.Team</td>
+                        <td><code>@s.BadgeNumber</code></td>
+                        <td>@(s.FirstOfDay ? "first of day" : s.Recognised ? "again" : "not recognised")@(s.Source == "import" ? " · imported" : "")</td>
+                        <td class="muted">@s.ScannedCentral.ToString("yyyy-MM-dd HH:mm:ss") @s.CentralZone</td>
+                        <td class="muted">@s.ScannedUtc.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss")Z</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

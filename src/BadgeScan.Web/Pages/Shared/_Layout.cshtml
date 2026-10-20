@@ -1,0 +1,66 @@
+@*
+    The frame around every page: the browser tab's title, the menu at the top and the
+    footer at the bottom. Each page's own content appears where @RenderBody() is.
+*@
+@inject StoreInfo Store
+@inject IWebHostEnvironment Env
+@{
+    var currentPath = Context.Request.Path.Value?.TrimEnd('/') is { Length: > 0 } p ? p : "/";
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] | @AppInfo.Name</title>
+    <meta name="description" content="Badge scanner attendance for Pleasant Valley FIRST Robotics." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#070b1f" />
+    <link rel="icon" href="/images/pv-logo.png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body style="--accent: #22d3ee">
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="header">
+        <div class="container bar">
+            <a class="brand" href="/">
+                <img src="/images/pv-logo.png" alt="" width="40" height="40" style="background: #ffffff" />
+                <span>@AppInfo.Name</span>
+            </a>
+            <nav aria-label="Main">
+                <ul>
+                    @foreach (var (label, href) in AppInfo.Nav)
+                    {
+                        <li><a href="@href" aria-current="@(currentPath == href ? "page" : null)">@label</a></li>
+                    }
+                    <li><a href="@AppInfo.PvSite">PV Robotics ↗</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    @if (Store.InMemory && !Env.IsDevelopment())
+    {
+        <div class="notice notice--warn container" role="status">
+            Memory mode: this site has no database, so scans are <strong>not being saved</strong>. Check compose.yaml passes PGHOST.
+        </div>
+    }
+
+    <main id="main">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-inner">
+            <a class="pv" href="@AppInfo.PvSite">
+                <img src="/images/pv-logo.png" alt="" width="44" height="44" />
+                <span>Part of Pleasant Valley FIRST Robotics</span>
+            </a>
+            <img class="footer-first" src="/images/first-logo.png" alt="FIRST" width="111" height="70" />
+        </div>
+        <div class="container legal muted">© @DateTime.Now.Year Pleasant Valley FIRST Robotics · Times are US Central</div>
+    </footer>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

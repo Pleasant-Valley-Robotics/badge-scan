@@ -1,134 +1,92 @@
-# Team website
+# Badge Scan
 
-Your team's own website. It is part of Pleasant Valley FIRST Robotics and runs on
-the program's robotics server. You don't need to have made a website before: every
-page is one file, and the words on it are written right there in the file.
+The badge scanner attendance kiosk for Pleasant Valley FIRST Robotics, written in C# with
+ASP.NET Core (.NET 10). It runs on the program's robotics server as program-wide
+"team 1" and keeps its own PostgreSQL database there.
 
 | | Address | Who can see it |
 |---|---|---|
-| **Preview** | `https://dev-<team number>.firstpvrobotics.com` | Mentors (password) |
-| **Live site** | `https://<team number>.firstpvrobotics.com` | Everyone |
+| **Preview** | `https://dev-1.firstpvrobotics.com` | Mentors (password) |
+| **Live kiosk** | `https://1.firstpvrobotics.com` | Mentors, and the kiosk laptop with the `kiosk` password |
 
-**Please don't post students' full names or anything a parent wouldn't want
-public.** First names and team photos are fine when your team agrees.
+Every scan is saved with the moment in UTC and on the Central wall clock (CST or CDT),
+plus the stamp the kiosk showed, like `Th10/08/2026|17:17`. The first scan of a day
+checks a person in; later scans are saved too and the kiosk says they already scanned.
+Scans are not sent anywhere else: another project will carry them into the attendance app.
 
-## A few words first
+**No student names belong in this repository.** People and badges live only in the
+database, added through the Badges and Import pages. Test code uses made-up names.
 
-- **HTML** is how a web page is written: words wrapped in *tags* such as
-  `<h1>A big heading</h1>` or `<p>A paragraph.</p>`. The tag says what the words are;
-  the browser decides how they look, using the style sheet.
-- **A `.cshtml` file** is an HTML page that can also hold small pieces of C# (a
-  programming language). The site turns it into plain HTML each time someone visits.
-- **`@`** marks the start of C#. `@DateTime.Now.Year`, for example, is replaced by this
-  year's number. If you need a real `@` in your words (an Instagram handle), write `@@`.
-  Email addresses like `team@example.com` are fine as they are.
-- **`<!-- ... -->`** is a note in the HTML. Visitors don't see it. The notes in these
-  files tell you what to change.
-- **The style sheet** (`wwwroot/css/site.css`) decides colors, fonts and spacing. You
-  don't need to touch it to change words.
+## Pages
 
-## Change the words on the home page
+| Page | What it does |
+|---|---|
+| `/` | The kiosk: a clock, the box the scanner types into, the last ten scans (live) |
+| `/badges` | Who holds which badge: assign, change, clear, add a person |
+| `/scans` | Every scan between two dates, with a CSV download (`/scans.csv`) |
+| `/import` | Load people and badges, or old scans, from a CSV |
 
-The home page is **`src/TeamSite.Web/Pages/Index.cshtml`**. Open it and change the
-words between the tags: your team name, FTC or FRC, your number, your story, the
-cards. Each part has a `<!-- note -->` above it saying what goes there. To add a
-paragraph, copy a `<p>...</p>` line; to add a card, copy one `<div class="card item">` line.
+## JSON
 
-Three things are in the frame around every page instead,
-**`src/TeamSite.Web/Pages/Shared/_Layout.cshtml`**: the team name and logo at the top,
-the menu, and the footer. Change "Team Name", "FTC" and "#0" there too.
+| | Address | Body → answer |
+|---|---|---|
+| `POST` | `/api/scans` | `{ "badge": "0000000027", "team": 7196 }` → the saved scan; 404 when the badge is unknown |
+| `GET` | `/api/scans?date=2026-10-08&to=…&team=…&limit=…` | scans for a Central date or range, newest first |
+| `GET` | `/api/scans/stream` | server-sent events, one `scan` event per new scan |
+| `POST` | `/api/scans/import` | a CSV body `name,team,stamp` |
+| `GET` `POST` | `/api/badges` | the people; add one `{ "team": 7196, "name": "…", "badge": "27" }` |
+| `PUT` `DELETE` | `/api/badges/{id}` | `{ "badge": "27" }` or `{ "badge": null }`; remove a person |
+| `POST` | `/api/badges/import` | a CSV body `name,team,badge` |
 
-Pictures go in `src/TeamSite.Web/wwwroot/images/`. A file at
-`wwwroot/images/robot.jpg` is shown with `<img src="/images/robot.jpg" alt="Our robot" />`.
-The `alt` words describe the picture for people who can't see it.
-
-## Add a page: "Our Robot"
-
-A page is **one file in `Pages/`** and **one link in the menu**. The file's name is
-its address: `Pages/Robot.cshtml` is `/robot` (capitals don't matter).
-
-1. Create `src/TeamSite.Web/Pages/Robot.cshtml` with this in it:
-
-   ```html
-   @page
-   @{
-       ViewData["Title"] = "Our Robot";
-   }
-   <section class="section">
-       <div class="container">
-           <h1>Our Robot</h1>
-           <p>This season's robot picks up game pieces with a two-wheel intake.</p>
-       </div>
-   </section>
-   ```
-
-   The first line, `@page`, tells the site this file is a page. The `Title` is the
-   words in the browser tab. Everything after that is your HTML.
-
-2. In `src/TeamSite.Web/Pages/Shared/_Layout.cshtml`, find the menu (`<nav>`) and add
-   one line under the Home line:
-
-   ```html
-   <li><a href="/robot">Our Robot</a></li>
-   ```
-
-3. Run `dotnet test`. One test reads the menu and checks every link in it opens a
-   page, so a typo in the address shows up here before anyone sees it.
-
-That's all. Copy any `<section>` from `Index.cshtml` if you want the same cards or
-layout on your new page.
+All of it sits behind the server's password, like the pages.
 
 ## Run it on your computer
 
-Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) (the tools that build
-the site) and [Visual Studio Code](https://code.visualstudio.com) (an editor) with the
-C# Dev Kit extension. Open this folder in Visual Studio Code, then in its terminal
-(**Terminal → New Terminal**):
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download), then:
 
 ```bash
-dotnet watch --project src/TeamSite.Web     # opens http://localhost:5300 and reloads when you save
+dotnet watch --project src/BadgeScan.Web     # http://localhost:5300, reloads when you save
 dotnet test                                  # runs the tests
 ```
 
-Press `Ctrl+C` in the terminal to stop the site.
+Without a database the site keeps everything in memory and says so at the top of each
+page. To use a real PostgreSQL on your computer, set `PGHOST`, `PGPORT`, `PGUSER`,
+`PGPASSWORD` and `PGDATABASE` in `src/BadgeScan.Web/Properties/launchSettings.json`
+(never commit a password). The tables are created on first start.
 
-## How a change gets to the website
-
-1. **Make a branch** (your own copy of the code to work on) and edit the files.
-2. **Run `dotnet test`.** Fix anything red before you push.
-3. **Open a pull request** (a request to add your change) into `main`. GitHub builds
-   the site, runs the tests and starts the container. A red ✗ means something is
-   broken: click **Details** to see why. You can't merge until it's green.
-4. **Merge the pull request.** Within about a minute the robotics server pulls `main`
-   and updates the **preview**. Look at it with a mentor.
-5. **Publish it live** by creating a release tag (a mentor or team lead does this):
-   - On GitHub: **Releases → Draft a new release → Choose a tag**, type the next
-     version (for example `v2.0.1`), click **Create new tag**, then **Publish release**.
-   - Or in a terminal: `git tag v2.0.1 && git push origin v2.0.1`
-
-   Within about a minute the live site updates. Tags must start with `v`; the newest
-   one is what's live.
-
-**If a release is broken**, the server sees that `/healthz` doesn't answer and keeps
-the previous version running. To see what happened, open
-`https://dev-<team number>.firstpvrobotics.com/_platform/` (mentor password).
-
-## What's in the folder
+## How it's put together
 
 | File or folder | What it does |
 |---|---|
-| `src/TeamSite.Web/Pages/Index.cshtml` | **The home page.** Start here |
-| `Pages/Shared/_Layout.cshtml` | The frame around every page: the menu at the top, the footer |
-| `Pages/NotFound.cshtml` | The page shown when an address doesn't exist (404) |
-| `Pages/Error.cshtml` | The page shown if something breaks on the live site (500) |
-| `Pages/_ViewStart.cshtml`, `Pages/_ViewImports.cshtml` | Settings for every page. Leave them alone |
-| `wwwroot/` | Files sent as they are: `css/site.css`, `images/`, `fonts/` |
-| `Program.cs` | Where the site starts. You don't need to change it |
-| `tests/TeamSite.Web.Tests/` | The tests GitHub runs on every pull request |
+| `src/BadgeScan.Web/Pages/` | One `.cshtml` per page; `Shared/_Layout.cshtml` is the frame around them |
+| `Controllers/Api/` | The JSON: `ScansApiController` (scans, the live stream, CSV), `BadgesApiController` |
+| `Services/ScanRecorder.cs` | What a scan means: who, when (UTC and Central), first of the day or not |
+| `Services/CentralTime.cs` | The team's wall clock and the stamp format |
+| `Services/BadgeNumber.cs` | `0000000027` and `27` are the same badge |
+| `Services/ScanBroadcaster.cs` | Hands each new scan to every open kiosk |
+| `Services/Importer.cs` | The CSV imports |
+| `Data/Migrations/*.sql` | The database, as plain SQL. Add a new file to change it; never edit an old one |
+| `Data/Migrator.cs` | Runs those files at start |
+| `Data/PostgresStore.cs`, `Data/InMemoryStore.cs` | Where badges and scans are kept |
+| `wwwroot/js/kiosk.js`, `badges.js` | The pages' JavaScript, no build step |
+| `tests/BadgeScan.Web.Tests/` | Tests GitHub runs on every pull request. They never touch a real database |
 
-## Files the server needs (leave these alone unless you know why)
+## How a change gets to the server
+
+1. Branch, change, `dotnet test`.
+2. Open a pull request into `main`. GitHub builds the site, runs the tests, builds the
+   container and asks it `/healthz`.
+3. Merge. Within a minute the robotics server updates the **preview**.
+4. Tag a version (`git tag v0.1.1 && git push origin v0.1.1`). Within a minute the live
+   kiosk updates. A release that fails its health check is not kept; the previous one
+   keeps running.
+
+Server-side notes (which team, the kiosk password, where logs are) are in the mentors'
+"Seamer Server" folder, not here.
+
+## Files the server needs
 
 - `Dockerfile`: compiles the site and runs it.
-- `compose.yaml`: how the server runs the container.
-- `robotics.yml`: which address goes to the container. `public: true` opens the live site to everyone.
+- `compose.yaml`: how the server runs the container, and which settings it is handed.
+- `robotics.yml`: the address, the port, the health check. No `public: true`: it stays behind a password.
 - `.github/workflows/check.yml`: the checks on every pull request.

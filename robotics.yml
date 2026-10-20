@@ -1,8 +1,9 @@
 # Which address goes to which container. Read by the robotics server.
-#   main branch  -> https://dev-<team>.firstpvrobotics.com  (mentors only, a preview)
-#   tag v1.2.3   -> https://<team>.firstpvrobotics.com      (the live site)
+#   main branch  -> https://dev-1.firstpvrobotics.com  (mentors only, a preview)
+#   tag v1.2.3   -> https://1.firstpvrobotics.com      (the live kiosk)
+# No "public: true": every address asks for a password. Mentors use their own; the kiosk
+# laptop uses the "kiosk" name from /etc/caddy/robotics/teams/1.users on the server.
 apps:
   - path: /
     port: 1
     health: /healthz
-    public: true    # live site is open to everyone; the preview always needs a mentor password

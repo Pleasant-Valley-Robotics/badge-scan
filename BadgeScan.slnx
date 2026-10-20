@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BadgeScan.Web/BadgeScan.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BadgeScan.Web.Tests/BadgeScan.Web.Tests.csproj" />
+  </Folder>
+</Solution>

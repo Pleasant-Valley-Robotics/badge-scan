@@ -25,3 +25,6 @@ jobs:
           docker run -d --name site -p 8080:8080 site
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && exit 0; sleep 1; done
           docker logs site; exit 1
+      - name: The container knows Central time
+        # Scans are stamped in US Central. The image must carry the time zone data for it.
+        run: docker run --rm --entrypoint ls site /usr/share/zoneinfo/America/Chicago

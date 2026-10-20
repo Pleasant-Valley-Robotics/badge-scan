@@ -185,3 +185,55 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 
 .item { border-top: 3px solid var(--accent); }
 .item p { margin-bottom: 0; }
+
+/* ---------- Badge scan: shared bits ---------- */
+.narrow { max-width: 760px; }
+.notice { border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; margin: 1rem auto; font-size: 0.95rem; }
+.notice ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+.notice--ok { background: rgb(22 163 74 / 0.12); border-color: rgb(22 163 74 / 0.5); color: #bbf7d0; }
+.notice--warn { background: rgb(217 119 6 / 0.12); border-color: rgb(217 119 6 / 0.5); color: #fde68a; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: end; margin-bottom: 1.25rem; }
+.toolbar label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+input, select, textarea {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.5rem 0.75rem;
+}
+textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; }
+.card label { display: block; margin: 0.75rem 0; color: var(--muted); font-size: 0.9rem; }
+.card input[type=file] { display: block; margin-top: 0.25rem; }
+.btn--sm { padding: 0.45rem 0.9rem; font-size: 0.9rem; }
+.btn-link { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 0.85rem; padding: 0.25rem 0.5rem; }
+.btn-link:hover { color: #fca5a5; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.table th, .table td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table th { color: var(--muted); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.table code { font-size: 0.95em; }
+.table .actions { text-align: right; white-space: nowrap; }
+.table tr.is-unknown td { color: var(--muted); }
+.assign-box { margin-top: 0.4rem; }
+.assign-box input { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.add-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: center; }
+@media (max-width: 640px) { .add-row { grid-template-columns: 1fr; } }
+.pill { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.6rem; border-radius: 999px; background: rgb(217 119 6 / 0.2); color: #fde68a; vertical-align: middle; margin-left: 0.5rem; }
+
+/* ---------- Badge scan: the kiosk (Pages/Index.cshtml) ---------- */
+.kiosk-wrap { max-width: 720px; display: grid; gap: 1.25rem; }
+.kiosk-head { text-align: center; }
+.kiosk-clock { font-family: var(--font-display); font-size: clamp(3rem, 10vw, 5.5rem); font-weight: 700; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.kiosk-date { font-size: 1.2rem; margin: 0.25rem 0 1rem; }
+.kiosk-label { font-family: var(--font-display); font-weight: 600; color: var(--muted); font-size: 1rem; }
+.kiosk-input {
+  width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.75rem;
+  padding: 0.9rem 1.1rem; border-radius: 14px; border: 2px solid var(--border); background: var(--surface);
+}
+.kiosk-input:focus { border-color: var(--cyan); outline: none; }
+.kiosk-banner { border: 1px solid; border-radius: 14px; padding: 1rem 1.25rem; text-align: center; font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700; }
+.kiosk-banner.is-ok { background: rgb(22 163 74 / 0.15); border-color: #16a34a; color: #bbf7d0; }
+.kiosk-banner.is-again { background: rgb(217 119 6 / 0.15); border-color: #d97706; color: #fde68a; }
+.kiosk-banner.is-error { background: rgb(220 38 38 / 0.15); border-color: #dc2626; color: #fecaca; }
+.kiosk-recent { list-style: none; margin: 0; padding: 0; }
+.kiosk-recent li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 1.05rem; }
+.kiosk-recent .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kiosk-recent .when { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); flex-shrink: 0; }
+.kiosk-recent .when.is-again { color: #fbbf24; }
+.kiosk-recent .when.is-error { color: #fca5a5; }

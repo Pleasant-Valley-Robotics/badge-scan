@@ -1,0 +1,64 @@
+@page
+@model BadgesModel
+@{
+    ViewData["Title"] = "Badges";
+}
+@*
+    Linking each badge to its person. Pick someone, scan their badge (or type the number),
+    done. One badge belongs to one person per team; the database refuses a second, and the
+    page says whose it already is. wwwroot/js/badges.js does the work.
+*@
+<section class="section badges" data-default-team="@AppInfo.DefaultTeam">
+    <div class="container narrow">
+        <div class="section-head">
+            <span class="eyebrow">Who holds which badge</span>
+            <h2>Badges</h2>
+            <p class="muted">Pick a person, then scan their badge or type its number and press Enter.
+                <span id="count">@Model.Unassigned of @Model.People.Count without a badge.</span></p>
+        </div>
+
+        <form method="get" class="toolbar">
+            <label>Team
+                <select name="team" onchange="this.form.submit()">
+                    <option value="">All teams</option>
+                    @foreach (var t in Model.Teams)
+                    {
+                        <option value="@t" selected="@(Model.Team == t)">@t</option>
+                    }
+                </select>
+            </label>
+        </form>
+
+        <div id="message" class="notice" role="status" hidden></div>
+
+        <table class="table" id="people">
+            <thead><tr><th>Name</th><th>Team</th><th>Badge</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in Model.People)
+            {
+                <tr data-id="@p.Id" data-name="@p.Name" data-team="@p.Team" data-badge="@p.BadgeNumber">
+                    <td class="name">@p.Name</td>
+                    <td class="team muted">@p.Team</td>
+                    <td class="badge">@if (p.BadgeNumber is null) { <span class="muted">no badge</span> } else { <code>@p.BadgeNumber</code> }</td>
+                    <td class="actions">
+                        <button type="button" class="btn btn--ghost btn--sm assign">@(p.BadgeNumber is null ? "Assign" : "Change")</button>
+                        @if (p.BadgeNumber is not null) { <button type="button" class="btn-link clear">Clear</button> }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <h3>Add a person</h3>
+        <form id="add" class="add-row" autocomplete="off">
+            <input name="name" placeholder="Name" required />
+            <input name="team" type="number" min="1" placeholder="Team (@AppInfo.DefaultTeam)" value="@(Model.Team?.ToString())" />
+            <input name="badge" placeholder="Badge (optional)" />
+            <button class="btn btn--primary btn--sm" type="submit">Add</button>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/badges.js" asp-append-version="true"></script>
+}

@@ -1,5 +1,6 @@
-# How the robotics server runs this site. The server fills in ${PORT_1}
-# (from robotics.yml) at each release, for the preview and the live site.
+# How the robotics server runs this site. At each release the server fills in ${PORT_1}
+# (from robotics.yml) and the database settings for this team, for the preview and the
+# live site separately. The site only sees what is listed under environment: here.
 services:
   web:
     build: .
@@ -7,4 +8,11 @@ services:
       - "127.0.0.1:${PORT_1}:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      ENVIRONMENT: ${ENVIRONMENT}
+      BASE_PATH_1: ${BASE_PATH_1}
+      PGHOST: ${PGHOST}
+      PGPORT: ${PGPORT}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
     restart: unless-stopped
