@@ -374,7 +374,10 @@ public class DataKeyTests(TestApp app) : IClassFixture<TestApp>
         var program = Program(key);
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await program.PostAsJsonAsync("/api/scans", new { badge = "5150" })).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await program.GetAsync("/api/badges")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await program.GetAsync("/api/badges")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await program.PostAsJsonAsync("/api/badges", new { team = 7196, name = "Sneaky" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await program.PutAsJsonAsync("/api/badges/1", new { badge = "1" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await program.DeleteAsync("/api/badges/1")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await program.GetAsync("/api/scans/stream")).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await program.GetAsync("/accounts")).StatusCode);
     }

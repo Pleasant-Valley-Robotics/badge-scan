@@ -1,6 +1,7 @@
 using BadgeScan.Web.Data;
 using BadgeScan.Web.Models;
 using BadgeScan.Web.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BadgeScan.Web.Controllers.Api;
@@ -10,7 +11,9 @@ namespace BadgeScan.Web.Controllers.Api;
 [Route("api/badges")]
 public sealed class BadgesApiController(IBadgeScanStore store, Importer importer) : ControllerBase
 {
+    /// <summary>Everyone and their badge. Staff, or another program with a data key (Project-Tracker).</summary>
     [HttpGet]
+    [Authorize(Policy = SignIns.Policies.ReadScans)]
     public async Task<IActionResult> List([FromQuery] string? team, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(team)) return Ok(await store.ListBadgesAsync(null, ct));

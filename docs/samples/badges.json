@@ -1,0 +1,5 @@
+[
+  { "id": 2, "team": null, "name": "Pat Example", "badgeNumber": "41", "role": "mentor", "group": "Mentor" },
+  { "id": 1, "team": 7196, "name": "Jane Example", "badgeNumber": "27", "role": null, "group": "Team 7196" },
+  { "id": 3, "team": 7196, "name": "Sam Example", "badgeNumber": null, "role": null, "group": "Team 7196" }
+]

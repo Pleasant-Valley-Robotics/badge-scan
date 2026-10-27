@@ -15,7 +15,7 @@ namespace BadgeScan.Web.Services;
 ///  - staff:   a lead, coach or mentor signed in with their own account. May do everything.
 ///  - kiosk:   a browser someone turned into the kiosk by starting a meeting. May scan badges
 ///             and see today's last few scans, nothing else, until the meeting ends.
-///  - program: another program (Project-Tracker) with a data key. May read scans, nothing else.
+///  - program: another program (Project-Tracker) with a data key. May read scans and the badge list, nothing else.
 /// Staff and kiosk sign-ins are a cookie; a program sends "Authorization: Bearer bsk_...".
 /// </summary>
 public static class SignIns
