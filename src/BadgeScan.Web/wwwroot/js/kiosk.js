@@ -1,13 +1,18 @@
-// The kiosk: a clock, a box the badge scanner types into, and the last few scans.
+// The kiosk: a clock, a box the badge scanner types into, what the last scan was, and the
+// last few scans. Every team scans in at the same kiosk.
 //
 // The scanner is a keyboard as far as the browser knows: it types the badge number and
 // presses Enter. So the box is a plain text input, visible on purpose: whoever is watching
 // sees the number arrive and the answer underneath, which is how they know the scan worked.
 (() => {
   const section = document.querySelector('.kiosk');
-  const team = section.dataset.team ? Number(section.dataset.team) : null;
+  const endsAt = Number(section.dataset.ends);
   const input = document.getElementById('badge');
   const banner = document.getElementById('banner');
+  const result = document.getElementById('result');
+  const who = document.getElementById('who');
+  const facts = document.getElementById('facts');
+  const when = document.getElementById('when');
   const recent = document.getElementById('recent');
   const live = document.getElementById('live');
   const seen = new Set();
@@ -25,19 +30,38 @@
   tick();
   setInterval(tick, 1000);
 
+  // ---- the meeting ends: reloading shows the sign-in page ----
+  // (The server decides; this just doesn't leave a dead kiosk on screen.)
+  const ended = () => window.location.reload();
+  setTimeout(ended, Math.max(0, endsAt - Date.now()) + 2000);
+
   // ---- focus never wanders: nobody is using this screen for anything else ----
   const focus = () => input.focus({ preventScroll: true });
   focus();
   input.addEventListener('blur', () => setTimeout(focus, 0));
   setInterval(() => { if (document.activeElement !== input) focus(); }, 2000);
 
-  // ---- one scan ----
-  const show = (tone, text) => {
+  // ---- one scan: what happened, who, their team and badge, and when ----
+  const show = (tone, heading, name = '', detail = '', time = '') => {
     banner.className = `kiosk-banner is-${tone}`;
-    banner.textContent = text;
+    result.textContent = heading;
+    who.textContent = name;
+    facts.textContent = detail;
+    when.textContent = time;
     banner.hidden = false;
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => { banner.hidden = true; }, 4000);
+    hideTimer = setTimeout(() => { banner.hidden = true; }, 6000);
+  };
+  // "17:05" from a stamp like Th10/08/2026|17:05, as "5:05 PM".
+  const twelveHour = (stamp) => {
+    const [h, m] = stamp.slice(-5).split(':').map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  };
+  const showScan = (scan) => {
+    const detail = `Team ${scan.team} · Badge ${scan.badge}`;
+    const time = `${scan.dateText} · ${scan.timeText}`;
+    if (scan.already) show('again', scan.firstStamp ? `Already checked in at ${twelveHour(scan.firstStamp)}` : 'Already checked in today', scan.name, detail, time);
+    else show('ok', '✓ Checked in', scan.name, detail, time);
   };
 
   const submit = async () => {
@@ -50,20 +74,18 @@
       const res = await fetch('/api/scans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ badge, team }),
+        body: JSON.stringify({ badge }),
       });
+      if (res.status === 401) { ended(); return; }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        show('error', body.error || `Could not save the scan (${res.status})`);
-      } else if (body.already) {
-        show('again', `${body.name} already scanned in at ${body.firstStamp || body.stamp}`);
-        add(body);
+        show('error', body.error || `Could not save the scan (${res.status})`, '', body.badge ? `Badge ${body.badge}` : '');
       } else {
-        show('ok', `✓ ${body.name} — ${body.stamp}`);
+        showScan(body);
         add(body);
       }
     } catch (err) {
-      show('error', 'Could not reach the server: ' + err.message);
+      show('error', 'Could not reach the server', '', err.message);
     } finally {
       busy = false;
       input.placeholder = 'Scan a badge, or type its number and press Enter';
@@ -80,18 +102,21 @@
     const name = document.createElement('span');
     name.className = 'who';
     name.textContent = scan.recognised ? scan.name : `Badge ${scan.badge} not recognised`;
-    const when = document.createElement('span');
-    when.className = 'when' + (scan.already ? ' is-again' : '') + (scan.recognised ? '' : ' is-error');
-    when.textContent = (scan.already ? 'again · ' : '') + scan.stamp;
-    li.append(name, when);
+    const badge = document.createElement('span');
+    badge.className = 'badge-no';
+    badge.textContent = scan.recognised ? `${scan.team} · #${scan.badge}` : '';
+    const at = document.createElement('span');
+    at.className = 'when' + (scan.already ? ' is-again' : '') + (scan.recognised ? '' : ' is-error');
+    at.textContent = (scan.already ? 'again · ' : '') + scan.stamp;
+    li.append(name, badge, at);
     if (append) recent.append(li); else recent.prepend(li);
     while (recent.children.length > 10) recent.lastChild.remove();
   };
 
   const load = async () => {
     try {
-      const url = '/api/scans?limit=10' + (team ? `&team=${team}` : '');
-      const res = await fetch(url);
+      const res = await fetch('/api/scans?limit=10');
+      if (res.status === 401) { ended(); return; }
       if (!res.ok) return;
       const body = await res.json();
       recent.replaceChildren();
@@ -104,10 +129,9 @@
   load();
   const stream = new EventSource('/api/scans/stream');
   stream.addEventListener('scan', (e) => {
-    const scan = JSON.parse(e.data);
-    if (team && scan.team && scan.team !== team) return;
-    add(scan);
+    add(JSON.parse(e.data));
   });
   stream.addEventListener('open', () => { live.hidden = true; load(); });
-  stream.addEventListener('error', () => { live.hidden = false; });
+  // A stream that drops may mean the meeting ended; load() finds out and reloads if so.
+  stream.addEventListener('error', () => { live.hidden = false; load(); });
 })();

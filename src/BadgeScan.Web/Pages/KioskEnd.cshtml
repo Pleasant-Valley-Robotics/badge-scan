@@ -1,0 +1,28 @@
+@page "/kiosk/end"
+@model KioskEndModel
+@{
+    ViewData["Title"] = "End meeting";
+}
+<section class="section">
+    <div class="container narrow-form">
+        <div class="section-head">
+            <span class="eyebrow">Leads, coaches and mentors</span>
+            <h2>End the meeting</h2>
+            <p class="muted">Sign in to end it. The kiosk stops taking scans and this screen goes back to your Start page.</p>
+        </div>
+        @if (Model.Error is not null)
+        {
+            <p class="notice notice--error" role="alert">@Model.Error</p>
+        }
+        <form method="post" class="card stack">
+            <label>Username
+                <input name="Username" value="@Model.Username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
+            </label>
+            <label>Password
+                <input name="Password" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="btn btn--primary" type="submit">End meeting</button>
+            <a class="btn btn--ghost" href="/kiosk">Back to the kiosk</a>
+        </form>
+    </div>
+</section>

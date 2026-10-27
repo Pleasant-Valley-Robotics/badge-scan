@@ -1,0 +1,45 @@
+@page "/kiosk"
+@model KioskModel
+@{
+    ViewData["Title"] = "Kiosk";
+}
+@*
+    The laptop at the door. A lead, coach or mentor starts a meeting on the Start page and
+    walks away; people scan their badges as they arrive, from any team. The scan box keeps
+    hold of focus so the scanner's keystrokes always land in it. wwwroot/js/kiosk.js does
+    the work. "End meeting" asks for a password.
+*@
+<section class="section kiosk" data-ends="@Model.Meeting.EndsUtc.ToUnixTimeMilliseconds()">
+    <div class="container kiosk-wrap">
+        <div class="kiosk-head">
+            <p class="kiosk-clock" id="clock" aria-live="off">--:--</p>
+            <p class="kiosk-date muted" id="date"></p>
+            <p class="eyebrow">Scan your badge to check in</p>
+        </div>
+
+        <label class="kiosk-label" for="badge">Scan badge</label>
+        <input id="badge" class="kiosk-input" autocomplete="off" spellcheck="false" inputmode="numeric"
+               placeholder="Scan a badge, or type its number and press Enter" />
+
+        <div id="banner" class="kiosk-banner" role="status" hidden>
+            <p class="kiosk-result" id="result"></p>
+            <p class="kiosk-name" id="who"></p>
+            <p class="kiosk-facts" id="facts"></p>
+            <p class="kiosk-when" id="when"></p>
+        </div>
+
+        <div class="kiosk-recent-wrap">
+            <h3>Recent scans <span id="live" class="pill" hidden>reconnecting…</span></h3>
+            <ul id="recent" class="kiosk-recent"></ul>
+        </div>
+
+        <p class="kiosk-meeting muted">
+            Meeting opened by @Model.Meeting.OpenedByName · ends at @IndexModel.Clock(Model.Meeting.EndsUtc) ·
+            <a href="/kiosk/end">End meeting</a>
+        </p>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/kiosk.js" asp-append-version="true"></script>
+}

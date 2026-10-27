@@ -1,5 +1,6 @@
 @page "/error"
 @attribute [IgnoreAntiforgeryToken]
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @{
     // Shown when something breaks on the live site (Program.cs sends visitors here).
     // You can change the words; leave the @page, @attribute and StatusCode lines as they are.

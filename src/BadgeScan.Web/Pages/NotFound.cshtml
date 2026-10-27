@@ -1,5 +1,6 @@
 @page "/not-found"
 @attribute [IgnoreAntiforgeryToken]
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @{
     // Shown when someone asks for a page that doesn't exist (Program.cs sends them here).
     // You can change the words; leave the @page, @attribute and StatusCode lines as they are.

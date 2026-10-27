@@ -1,0 +1,116 @@
+@page
+@model AccountsModel
+@{
+    ViewData["Title"] = "Accounts";
+}
+@*
+    Everyone with an account can do everything here, including adding more people. Nobody's
+    password is ever shown: a new account or a reset gets a temporary one, shown once.
+*@
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Who can sign in</span>
+            <h2>Accounts</h2>
+            <p class="muted">Leads, coaches and mentors. Everyone here can start meetings, manage badges and add accounts.</p>
+        </div>
+
+        @if (Model.Shown is not null)
+        {
+            <div class="notice notice--ok one-time" role="status">
+                <strong>@Model.Shown.Heading:</strong>
+                <code class="secret">@Model.Shown.Secret</code>
+                <p>@Model.Shown.Note</p>
+            </div>
+        }
+        @if (Model.Message is not null)
+        {
+            <p class="notice notice--ok" role="status">@Model.Message</p>
+        }
+        @if (Model.Error is not null)
+        {
+            <p class="notice notice--error" role="alert">@Model.Error</p>
+        }
+
+        <table class="table">
+            <thead><tr><th>Name</th><th>Username</th><th>Title</th><th>Last sign-in</th><th></th><th></th></tr></thead>
+            <tbody>
+            @foreach (var a in Model.Accounts)
+            {
+                <tr class="@(a.Disabled ? "is-unknown" : "")">
+                    <td>@a.DisplayName@(a.Id == Model.MyId ? " (you)" : "")</td>
+                    <td><code>@a.Username</code></td>
+                    <td class="muted">@a.Title</td>
+                    <td class="muted">@AccountsModel.When(a.LastSignInAt)</td>
+                    <td class="muted">@Model.Status(a)</td>
+                    <td class="actions">
+                        <form method="post" asp-page-handler="Reset" asp-route-id="@a.Id" class="inline">
+                            <button class="btn-link" type="submit">New password</button>
+                        </form>
+                        @if (a.Id != Model.MyId)
+                        {
+                            <form method="post" asp-page-handler="Disable" asp-route-id="@a.Id" asp-route-off="@(!a.Disabled)" class="inline">
+                                <button class="btn-link" type="submit">@(a.Disabled ? "Turn on" : "Turn off")</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <h3>Add someone</h3>
+        <form method="post" asp-page-handler="Add" class="add-row" autocomplete="off">
+            <input name="displayName" placeholder="Full name" required />
+            <input name="username" placeholder="Username, like jsmith" autocapitalize="none" spellcheck="false" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,31}" required />
+            <select name="title">
+                @foreach (var t in Account.Titles)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <button class="btn btn--primary btn--sm" type="submit">Add</button>
+        </form>
+
+        <div class="section-head keys-head">
+            <span class="eyebrow">For other programs</span>
+            <h2>Data keys</h2>
+            <p class="muted">A key lets a program such as Project-Tracker read the scans, and nothing else. It sends the key as
+                <code>Authorization: Bearer bsk_…</code> to <code>/api/scans/since?after=0</code> (see the README). Revoke a key the moment it may have leaked.</p>
+        </div>
+        @if (Model.Keys.Count > 0)
+        {
+            <table class="table">
+                <thead><tr><th>For</th><th>Starts</th><th>Made by</th><th>Made</th><th>Last used</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var k in Model.Keys)
+                {
+                    <tr class="@(k.RevokedAt is null ? "" : "is-unknown")">
+                        <td>@k.Label</td>
+                        <td><code>@k.KeyPrefix…</code></td>
+                        <td class="muted">@k.CreatedByName</td>
+                        <td class="muted">@AccountsModel.When(k.CreatedAt)</td>
+                        <td class="muted">@AccountsModel.When(k.LastUsedAt)</td>
+                        <td class="actions">
+                            @if (k.RevokedAt is null)
+                            {
+                                <form method="post" asp-page-handler="RevokeKey" asp-route-id="@k.Id" class="inline">
+                                    <button class="btn-link" type="submit">Revoke</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="muted">revoked @AccountsModel.When(k.RevokedAt)</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        <form method="post" asp-page-handler="CreateKey" class="toolbar" autocomplete="off">
+            <label>What it's for <input name="label" placeholder="Project-Tracker" required /></label>
+            <button class="btn btn--ghost btn--sm" type="submit">Make a key</button>
+        </form>
+    </div>
+</section>

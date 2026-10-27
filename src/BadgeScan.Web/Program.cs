@@ -3,8 +3,19 @@
 
 using BadgeScan.Web.Data;
 using BadgeScan.Web.Services;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Npgsql;
+
+// "dotnet BadgeScan.Web.dll account ..." manages accounts from the server's shell instead of
+// starting the site: how the very first account is made. See Services/AccountCommand.cs.
+if (args is ["account", ..])
+{
+    Environment.ExitCode = await AccountCommand.RunAsync(args[1..]);
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +43,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ScanBroadcaster>();
 builder.Services.AddSingleton<ScanRecorder>();
 builder.Services.AddSingleton<Importer>();
+builder.Services.AddSingleton<AccountService>();
+
+// Who may see what: staff sign-ins, kiosks and data keys (Services/SignIns.cs).
+builder.Services.AddSignIns(builder.Configuration);
 
 // Where badges and scans are kept. The robotics server hands us PGHOST and friends through
 // compose.yaml. Without them (GitHub's check, a laptop without PostgreSQL), everything is
@@ -42,11 +57,18 @@ builder.Services.AddSingleton(new StoreInfo(inMemory));
 if (inMemory)
 {
     builder.Services.AddSingleton<IBadgeScanStore, InMemoryStore>();
+    builder.Services.AddSingleton<IAccountStore, InMemoryAccountStore>();
 }
 else
 {
     builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString!));
     builder.Services.AddSingleton<IBadgeScanStore, PostgresStore>();
+    builder.Services.AddSingleton<IAccountStore, PostgresAccountStore>();
+    // Sign-in cookies stay good across releases and restarts: their keys are in the database.
+    builder.Services.AddDataProtection().SetApplicationName("badge-scan");
+    builder.Services.AddSingleton<IConfigureOptions<KeyManagementOptions>>(services =>
+        new ConfigureOptions<KeyManagementOptions>(options =>
+            options.XmlRepository = new PostgresXmlRepository(services.GetRequiredService<NpgsqlDataSource>())));
 }
 
 var app = builder.Build();
@@ -58,6 +80,16 @@ _ = CentralTime.Zone;
 if (inMemory)
 {
     app.Logger.LogWarning("PGHOST is not set: badges and scans are kept in memory only and will be lost when the site stops");
+
+    // On a laptop (dotnet watch), something to sign in with. Never on the server: there the
+    // store is PostgreSQL and the environment is Production.
+    if (app.Environment.IsDevelopment())
+    {
+        var accounts = app.Services.GetRequiredService<AccountService>();
+        var (dev, temporary) = await accounts.CreateAsync("dev", "Dev Mentor", "mentor", CancellationToken.None);
+        await accounts.ChangePasswordAsync(dev, temporary, DevPassword, DevPassword, CancellationToken.None);
+        app.Logger.LogWarning("Development: sign in as dev / {Password}", DevPassword);
+    }
 }
 else
 {
@@ -66,6 +98,15 @@ else
 }
 
 app.UseForwardedHeaders();
+
+// No other site may show these pages inside a frame (and so trick someone into clicking).
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.XFrameOptions = "DENY";
+    context.Response.Headers.XContentTypeOptions = "nosniff";
+    context.Response.Headers["Referrer-Policy"] = "same-origin";
+    await next();
+});
 
 var isApi = (HttpContext context) => context.Request.Path.StartsWithSegments("/api");
 
@@ -90,7 +131,14 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.MapHealthChecks("/healthz");
+// Who is asking (a cookie, or a data key), then whether they may. Every page and address
+// is for signed-in staff unless it says otherwise.
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UsePasswordChangeFirst();
+app.UseAuthorization();
+
+app.MapHealthChecks("/healthz").AllowAnonymous();
 
 // Pages/Index.cshtml is "/", Pages/Badges.cshtml is "/badges", and so on.
 app.MapRazorPages();
@@ -100,4 +148,7 @@ app.MapControllers();
 await app.RunAsync();
 
 // Lets the tests in tests/BadgeScan.Web.Tests start the site in memory.
-public partial class Program { }
+public partial class Program
+{
+    private const string DevPassword = "development only";
+}

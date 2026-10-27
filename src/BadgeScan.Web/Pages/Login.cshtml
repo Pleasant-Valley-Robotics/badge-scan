@@ -1,0 +1,36 @@
+@page "/login"
+@model LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+@*
+    Leads, coaches and mentors sign in here before a meeting. Accounts are made on the
+    Accounts page by someone who already has one.
+*@
+<section class="section">
+    <div class="container narrow-form">
+        <div class="section-head">
+            <span class="eyebrow">Leads, coaches and mentors</span>
+            <h2>Sign in</h2>
+            @if (Model.MeetingEnded)
+            {
+                <p class="notice notice--warn" role="status">The meeting on this screen has ended. Sign in to start another.</p>
+            }
+        </div>
+        @if (Model.Error is not null)
+        {
+            <p class="notice notice--error" role="alert">@Model.Error</p>
+        }
+        <form method="post" class="card stack">
+            <label>Username
+                <input name="Username" value="@Model.Username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
+            </label>
+            <label>Password
+                <input name="Password" type="password" autocomplete="current-password" required />
+            </label>
+            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+            <button class="btn btn--primary" type="submit">Sign in</button>
+            <p class="muted small">Forgot your password? Any other mentor can give you a new one from the Accounts page.</p>
+        </form>
+    </div>
+</section>

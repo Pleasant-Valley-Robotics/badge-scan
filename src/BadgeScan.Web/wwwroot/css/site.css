@@ -192,6 +192,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .notice ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
 .notice--ok { background: rgb(22 163 74 / 0.12); border-color: rgb(22 163 74 / 0.5); color: #bbf7d0; }
 .notice--warn { background: rgb(217 119 6 / 0.12); border-color: rgb(217 119 6 / 0.5); color: #fde68a; }
+.notice--error { background: rgb(220 38 38 / 0.12); border-color: rgb(220 38 38 / 0.5); color: #fecaca; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: end; margin-bottom: 1.25rem; }
 .toolbar label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
 input, select, textarea {
@@ -237,3 +238,29 @@ textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monosp
 .kiosk-recent .when { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); flex-shrink: 0; }
 .kiosk-recent .when.is-again { color: #fbbf24; }
 .kiosk-recent .when.is-error { color: #fca5a5; }
+.kiosk-recent .badge-no { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 0.9rem; margin-left: auto; flex-shrink: 0; }
+.kiosk-banner p { margin: 0; }
+.kiosk-result { font-size: clamp(1.1rem, 3vw, 1.5rem); }
+.kiosk-name { font-family: var(--font-display); font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.1; margin: 0.25rem 0 !important; color: var(--text); overflow-wrap: anywhere; }
+.kiosk-facts { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(1rem, 2.5vw, 1.3rem); font-weight: 600; }
+.kiosk-when { font-size: clamp(0.95rem, 2.2vw, 1.15rem); font-weight: 500; }
+.kiosk-meeting { text-align: center; font-size: 0.9rem; margin: 0; }
+
+/* ---------- Signing in, the Start page, Accounts ---------- */
+.signed-in { display: flex; align-items: center; gap: 0.75rem; margin: 0; }
+.signed-in a { text-decoration: none; font-size: 0.95rem; }
+.narrow-form { max-width: 460px; }
+.stack { display: grid; gap: 1rem; }
+.stack label { display: grid; gap: 0.35rem; margin: 0; }
+.stack input { width: 100%; }
+.small { font-size: 0.875rem; margin: 0; }
+.start-meeting { display: grid; gap: 1rem; justify-items: start; margin-bottom: 1.5rem; }
+.start-meeting label { display: flex; align-items: center; gap: 0.75rem; margin: 0; color: var(--text); }
+.stats { margin-bottom: 2rem; }
+.stats .card { padding: 1.25rem 1.5rem; color: var(--muted); }
+.stat { display: block; font-family: var(--font-display); font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--text); margin-bottom: 0.25rem; }
+form.inline { display: inline; margin: 0; }
+.one-time p { margin: 0.5rem 0 0; }
+.one-time .secret { display: inline-block; font-size: 1.2rem; padding: 0.2rem 0.6rem; margin-left: 0.5rem; border-radius: 8px; background: rgb(0 0 0 / 0.3); color: var(--text); user-select: all; overflow-wrap: anywhere; }
+.keys-head { margin: 3rem 0 1.5rem; }
+.table + h3 { margin-top: 2rem; }

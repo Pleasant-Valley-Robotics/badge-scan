@@ -35,6 +35,9 @@ public interface IBadgeScanStore
     /// <summary>Scans between two Central dates (inclusive), newest first.</summary>
     Task<IReadOnlyList<ScanResult>> ScansForDatesAsync(DateOnly from, DateOnly to, int? team, int? limit, CancellationToken ct);
 
+    /// <summary>Every scan with an id above the given one, oldest first, at most limit: how another program catches up.</summary>
+    Task<IReadOnlyList<ScanResult>> ScansSinceAsync(long afterId, int limit, CancellationToken ct);
+
     /// <summary>Scans on one Central date with an id above the given one, oldest first: what a reconnecting kiosk missed.</summary>
     Task<IReadOnlyList<ScanResult>> ScansAfterAsync(long afterId, DateOnly centralDate, CancellationToken ct);
 }

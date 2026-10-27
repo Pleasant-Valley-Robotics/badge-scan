@@ -7,16 +7,13 @@ using System.Text.RegularExpressions;
 namespace BadgeScan.Web.Tests;
 
 /// <summary>The kiosk's side of things: scanning, through the JSON the kiosk's JavaScript uses.</summary>
-public class ScanApiTests : IClassFixture<TestApp>
+public class ScanApiTests(TestApp app) : IClassFixture<TestApp>, IAsyncLifetime
 {
-    private readonly TestApp _app;
-    private readonly HttpClient _client;
+    private readonly TestApp _app = app;
+    private HttpClient _client = null!;
 
-    public ScanApiTests(TestApp app)
-    {
-        _app = app;
-        _client = app.CreateClient();
-    }
+    public async Task InitializeAsync() => _client = (await app.StaffAsync()).Client;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private static readonly Regex StampShape = new(@"^(Su|Mo|Tu|We|Th|Fr|Sa)\d{2}/\d{2}/\d{4}\|\d{2}:\d{2}$");
 
@@ -112,9 +109,12 @@ public class ScanApiTests : IClassFixture<TestApp>
 }
 
 /// <summary>Who holds which badge.</summary>
-public class BadgeApiTests(TestApp app) : IClassFixture<TestApp>
+public class BadgeApiTests(TestApp app) : IClassFixture<TestApp>, IAsyncLifetime
 {
-    private readonly HttpClient _client = app.CreateClient();
+    private HttpClient _client = null!;
+
+    public async Task InitializeAsync() => _client = (await app.StaffAsync()).Client;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private static async Task<JsonElement> Body(HttpResponseMessage response)
         => JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
@@ -180,7 +180,7 @@ public class StreamTests(TestApp app) : IClassFixture<TestApp>
     [Fact]
     public async Task A_new_scan_arrives_on_the_stream()
     {
-        var client = app.CreateClient();
+        var (client, _) = await app.StaffAsync();
         await client.PostAsJsonAsync("/api/badges", new { team = 7196, name = "Streamer", badge = "8080" });
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -205,7 +205,7 @@ public class StreamTests(TestApp app) : IClassFixture<TestApp>
     [Fact]
     public async Task A_reconnecting_kiosk_gets_what_it_missed()
     {
-        var client = app.CreateClient();
+        var (client, _) = await app.StaffAsync();
         await client.PostAsJsonAsync("/api/badges", new { team = 7196, name = "Missed", badge = "9090" });
         var saved = JsonDocument.Parse(await (await client.PostAsJsonAsync("/api/scans", new { badge = "9090" })).Content.ReadAsStringAsync()).RootElement;
         var id = saved.GetProperty("id").GetInt64();

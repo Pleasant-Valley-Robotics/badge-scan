@@ -109,6 +109,8 @@ public sealed class InMemoryStore : IBadgeScanStore
                 CentralZone = scan.Central.ZoneAbbreviation,
                 CentralDate = scan.Central.Date,
                 Source = scan.Source,
+                MeetingId = scan.MeetingId,
+                OpenedBy = scan.OpenedBy,
             };
             _scans.Add(saved);
             return Task.FromResult<ScanResult?>(saved);
@@ -130,6 +132,15 @@ public sealed class InMemoryStore : IBadgeScanStore
                 .OrderByDescending(s => s.Id).AsEnumerable();
             if (limit is not null) query = query.Take(limit.Value);
             IReadOnlyList<ScanResult> list = query.ToList();
+            return Task.FromResult(list);
+        }
+    }
+
+    public Task<IReadOnlyList<ScanResult>> ScansSinceAsync(long afterId, int limit, CancellationToken ct)
+    {
+        lock (_lock)
+        {
+            IReadOnlyList<ScanResult> list = _scans.Where(s => s.Id > afterId).OrderBy(s => s.Id).Take(limit).ToList();
             return Task.FromResult(list);
         }
     }
