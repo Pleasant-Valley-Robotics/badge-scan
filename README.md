@@ -1,4 +1,4 @@
-# PV Attendance (badge-scan)
+# PV Robotics Badge Attendance (badge-scan)
 
 Badge scanner attendance for every Pleasant Valley FIRST Robotics team, written in C#
 with ASP.NET Core (.NET 10). It runs on the program's robotics server as program-wide

@@ -3,7 +3,7 @@ namespace BadgeScan.Web.Data;
 /// <summary>The few facts about this site that more than one page needs.</summary>
 public static class AppInfo
 {
-    public const string Name = "PV Attendance";
+    public const string Name = "PV Robotics Badge Attendance";
 
     /// <summary>The team a badge belongs to when nobody says otherwise: Radical, FTC 7196.</summary>
     public const int DefaultTeam = 7196;
