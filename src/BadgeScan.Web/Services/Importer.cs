@@ -27,7 +27,7 @@ public sealed class Importer(IBadgeScanStore store)
 
             var name = Cell(row, columns, "name").Trim();
             if (name.Length == 0) { problems.Add(new ImportProblem(line, "No name")); continue; }
-            if (!TryTeam(Cell(row, columns, "team"), out var team)) { problems.Add(new ImportProblem(line, "Team is not a number")); continue; }
+            if (!TryTeam(Cell(row, columns, "team"), out var team)) { problems.Add(new ImportProblem(line, $"Team is not {Groups.Expected}")); continue; }
             var badge = BadgeNumber.Normalize(Cell(row, columns, "badge"));
             if (badge is not null && !BadgeNumber.IsValid(badge)) { problems.Add(new ImportProblem(line, $"Badge \"{badge}\" has characters a scanner can't type")); continue; }
 
@@ -64,7 +64,7 @@ public sealed class Importer(IBadgeScanStore store)
 
             var name = Cell(row, columns, "name").Trim();
             if (name.Length == 0) { problems.Add(new ImportProblem(line, "No name")); continue; }
-            if (!TryTeam(Cell(row, columns, "team"), out var team)) { problems.Add(new ImportProblem(line, "Team is not a number")); continue; }
+            if (!TryTeam(Cell(row, columns, "team"), out var team)) { problems.Add(new ImportProblem(line, $"Team is not {Groups.Expected}")); continue; }
             var stamp = Cell(row, columns, "stamp").Trim();
             if (!CentralTime.TryParseStamp(stamp, out var instant)) { problems.Add(new ImportProblem(line, $"Stamp \"{stamp}\" is not like Th10/08/2026|17:17")); continue; }
 
@@ -95,9 +95,10 @@ public sealed class Importer(IBadgeScanStore store)
     private static string Cell(string[] row, Dictionary<string, int> columns, string name)
         => columns[name] < row.Length ? row[columns[name]] : "";
 
+    /// <summary>A team number, or mentor, coach or advisor. Blank means the default team.</summary>
     private static bool TryTeam(string text, out int team)
     {
         if (string.IsNullOrWhiteSpace(text)) { team = AppInfo.DefaultTeam; return true; }
-        return int.TryParse(text.Trim(), out team) && team > 0;
+        return Groups.TryParse(text, out team);
     }
 }

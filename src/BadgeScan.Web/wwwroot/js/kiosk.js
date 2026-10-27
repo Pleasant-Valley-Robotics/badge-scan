@@ -62,7 +62,7 @@
     return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
   };
   const showScan = (scan) => {
-    const detail = `Team ${scan.team} · Badge ${scan.badge}`;
+    const detail = `${scan.group} · Badge ${scan.badge}`;
     const time = `${scan.dateText} · ${scan.timeText}`;
     if (scan.already) show('again', scan.firstStamp ? `Already checked in at ${twelveHour(scan.firstStamp)}` : 'Already checked in today', scan.name, detail, time);
     else show('ok', '✓ Checked in', scan.name, detail, time);
@@ -109,7 +109,7 @@
     name.textContent = scan.recognised ? scan.name : `Badge ${scan.badge} not recognised`;
     const badge = document.createElement('span');
     badge.className = 'badge-no';
-    badge.textContent = scan.recognised ? `${scan.team} · #${scan.badge}` : '';
+    badge.textContent = scan.recognised ? `${scan.team ?? scan.group} · #${scan.badge}` : '';
     const at = document.createElement('span');
     at.className = 'when' + (scan.already ? ' is-again' : '') + (scan.recognised ? '' : ' is-error');
     at.textContent = (scan.already ? 'again · ' : '') + scan.stamp;

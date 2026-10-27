@@ -395,7 +395,7 @@ public class DataKeyTests(TestApp app) : IClassFixture<TestApp>
     }
 }
 
-/// <summary>Giving someone a badge from the kiosk, signed off with a password, without ending the meeting.</summary>
+/// <summary>Giving someone a badge from the kiosk, without a password and without ending the meeting.</summary>
 public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
 {
     private static async Task<JsonElement> Body(HttpResponseMessage response)
@@ -412,40 +412,34 @@ public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
     {
         var (mentor, _) = await app.StaffAsync();
         var person = await Body(await mentor.PostAsJsonAsync("/api/badges", new { team = 6093, name = "No Badge Yet" }));
-        var (kiosk, opener) = await app.KioskAsync("Assign Opener");
+        var (kiosk, _) = await app.KioskAsync("Assign Opener");
         Assert.Equal(HttpStatusCode.NotFound, (await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3131" })).StatusCode);
 
         var form = await (await kiosk.GetAsync("/kiosk/assign?badge=3131")).Content.ReadAsStringAsync();
         Assert.Contains("value=\"3131\"", form);
         Assert.Contains("No Badge Yet", form);
+        Assert.Contains(">Mentor</option>", form);
+        Assert.DoesNotContain("type=\"password\"", form);
 
-        var done = await Assign(kiosk, "0000003131", new()
-        {
-            ["PersonId"] = person.GetProperty("id").GetInt64().ToString(),
-            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
-        });
+        var done = await Assign(kiosk, "0000003131", new() { ["PersonId"] = person.GetProperty("id").GetInt64().ToString() });
         Assert.Equal("/kiosk", done.Headers.Location?.OriginalString);
 
         var kioskPage = await (await kiosk.GetAsync("/kiosk")).Content.ReadAsStringAsync();
-        Assert.Contains("Badge 3131 is now No Badge Yet&#x27;s (team 6093) and checked in.", kioskPage);
+        Assert.Contains("Badge 3131 is now No Badge Yet&#x27;s (Team 6093) and checked in.", kioskPage);
 
         var again = await Body(await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3131" }));
         Assert.Equal("No Badge Yet", again.GetProperty("name").GetString());
         Assert.True(again.GetProperty("already").GetBoolean());
 
-        // Still a kiosk: the password approved the badge, it didn't sign anyone in.
+        // Still a kiosk: assigning signs nobody in.
         Assert.Equal("/kiosk", (await kiosk.GetAsync("/badges")).Headers.Location?.OriginalString);
     }
 
     [Fact]
-    public async Task A_new_person_can_be_added_with_their_badge()
+    public async Task A_new_person_can_be_added_to_another_team()
     {
-        var (kiosk, opener) = await app.KioskAsync();
-        var done = await Assign(kiosk, "3232", new()
-        {
-            ["PersonId"] = "", ["NewName"] = "Brand New", ["NewTeam"] = "9082",
-            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
-        });
+        var (kiosk, _) = await app.KioskAsync();
+        var done = await Assign(kiosk, "3232", new() { ["PersonId"] = "", ["NewName"] = "Brand New", ["NewGroup"] = "other", ["NewTeam"] = "9082" });
         Assert.Equal("/kiosk", done.Headers.Location?.OriginalString);
 
         var scan = await Body(await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3232" }));
@@ -453,18 +447,30 @@ public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
         Assert.Equal(9082, scan.GetProperty("team").GetInt32());
     }
 
-    [Fact]
-    public async Task Nothing_is_assigned_without_the_right_password()
+    [Theory]
+    [InlineData("mentor", "Mentor", "3301")]
+    [InlineData("coach", "Coach", "3302")]
+    [InlineData("advisor", "Advisor", "3303")]
+    public async Task A_new_mentor_coach_or_advisor_needs_no_team(string role, string label, string badge)
     {
-        var (kiosk, opener) = await app.KioskAsync();
-        var refused = await Assign(kiosk, "3333", new()
-        {
-            ["PersonId"] = "", ["NewName"] = "Sneaky Teammate", ["NewTeam"] = "7196",
-            ["Username"] = opener.Username, ["Password"] = "a guess",
-        });
+        var (kiosk, _) = await app.KioskAsync();
+        var done = await Assign(kiosk, badge, new() { ["PersonId"] = "", ["NewName"] = $"Grown Up {label}", ["NewGroup"] = role });
+        Assert.Equal("/kiosk", done.Headers.Location?.OriginalString);
 
-        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
-        Assert.Contains("Wrong username or password.", await refused.Content.ReadAsStringAsync());
+        var scan = await Body(await kiosk.PostAsJsonAsync("/api/scans", new { badge }));
+        Assert.Equal($"Grown Up {label}", scan.GetProperty("name").GetString());
+        Assert.Equal(JsonValueKind.Null, scan.GetProperty("team").ValueKind);
+        Assert.Equal(role, scan.GetProperty("role").GetString());
+        Assert.Equal(label, scan.GetProperty("group").GetString());
+    }
+
+    [Fact]
+    public async Task A_new_person_needs_a_team_or_role()
+    {
+        var (kiosk, _) = await app.KioskAsync();
+        var refused = await Assign(kiosk, "3333", new() { ["PersonId"] = "", ["NewName"] = "Nowhere", ["NewGroup"] = "other" });
+
+        Assert.Contains("Pick a team, or Mentor, Coach or Advisor", await refused.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3333" })).StatusCode);
     }
 
@@ -473,13 +479,9 @@ public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
     {
         var (mentor, _) = await app.StaffAsync();
         await mentor.PostAsJsonAsync("/api/badges", new { team = 38350, name = "Has It", badge = "3434" });
-        var (kiosk, opener) = await app.KioskAsync();
+        var (kiosk, _) = await app.KioskAsync();
 
-        var refused = await Assign(kiosk, "3434", new()
-        {
-            ["PersonId"] = "", ["NewName"] = "Wants It", ["NewTeam"] = "38350",
-            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
-        });
+        var refused = await Assign(kiosk, "3434", new() { ["PersonId"] = "", ["NewName"] = "Wants It", ["NewGroup"] = "other", ["NewTeam"] = "38350" });
 
         Assert.Contains("Badge 3434 already belongs to Has It.", await refused.Content.ReadAsStringAsync());
     }
@@ -489,5 +491,37 @@ public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
     {
         var (mentor, _) = await app.StaffAsync();
         Assert.Equal("/badges", (await mentor.GetAsync("/kiosk/assign")).Headers.Location?.OriginalString);
+    }
+}
+
+/// <summary>Mentors, coaches and advisors through the API, the import and the spreadsheet.</summary>
+public class RoleTests(TestApp app) : IClassFixture<TestApp>
+{
+    [Fact]
+    public async Task The_badges_api_takes_a_role_instead_of_a_team()
+    {
+        var (mentor, _) = await app.StaffAsync();
+        var added = await mentor.PostAsJsonAsync("/api/badges", new { role = "Coach", name = "Api Coach", badge = "4401" });
+        Assert.Equal(HttpStatusCode.Created, added.StatusCode);
+        var body = JsonDocument.Parse(await added.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal("coach", body.GetProperty("role").GetString());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("team").ValueKind);
+
+        var coaches = await mentor.GetStringAsync("/api/badges?team=coach");
+        Assert.Contains("Api Coach", coaches);
+        Assert.Equal(HttpStatusCode.BadRequest, (await mentor.PostAsJsonAsync("/api/badges", new { role = "janitor", name = "X" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await mentor.PostAsJsonAsync("/api/badges", new { team = -7, name = "X" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task The_spreadsheet_says_mentor_in_the_team_column()
+    {
+        var (mentor, _) = await app.StaffAsync();
+        await mentor.PostAsJsonAsync("/api/badges", new { role = "mentor", name = "Csv Mentor", badge = "4402" });
+        var (kiosk, _) = await app.KioskAsync();
+        await kiosk.PostAsJsonAsync("/api/scans", new { badge = "4402" });
+
+        var csv = await mentor.GetStringAsync("/scans.csv?team=mentor");
+        Assert.Contains("Csv Mentor,Mentor,4402", csv);
     }
 }

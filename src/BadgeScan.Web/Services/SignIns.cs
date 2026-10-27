@@ -40,7 +40,7 @@ public static class SignIns
     }
 
     /// <summary>The forms that take a password, and so are limited per visitor.</summary>
-    private static readonly HashSet<string?> SignInPaths = new(StringComparer.OrdinalIgnoreCase) { "/login", "/kiosk/end", "/kiosk/assign" };
+    private static readonly HashSet<string?> SignInPaths = new(StringComparer.OrdinalIgnoreCase) { "/login", "/kiosk/end" };
 
     private static readonly object AccountItem = new();
     private static readonly object MeetingItem = new();

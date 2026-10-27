@@ -11,10 +11,15 @@ namespace BadgeScan.Web.Controllers.Api;
 public sealed class BadgesApiController(IBadgeScanStore store, Importer importer) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int? team, CancellationToken ct)
-        => Ok(await store.ListBadgesAsync(team, ct));
+    public async Task<IActionResult> List([FromQuery] string? team, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(team)) return Ok(await store.ListBadgesAsync(null, ct));
+        return Groups.TryParse(team, out var code)
+            ? Ok(await store.ListBadgesAsync(code, ct))
+            : BadRequest(new { error = $"team is {Groups.Expected}" });
+    }
 
-    /// <summary>Add a person, with or without a badge. Body: { "team": 7196, "name": "Jane D.", "badge": "27" }</summary>
+    /// <summary>Add a person, with or without a badge. Body: { "team": 7196, "name": "Jane D.", "badge": "27" }, or "role": "mentor" instead of a team.</summary>
     [HttpPost]
     [Consumes("application/json")]
     public async Task<IActionResult> Add([FromBody] BadgeRequest request, CancellationToken ct)
@@ -22,6 +27,9 @@ public sealed class BadgesApiController(IBadgeScanStore store, Importer importer
         var name = (request.Name ?? "").Trim();
         if (name.Length == 0) return BadRequest(new { error = "A name is needed" });
         var team = request.Team ?? AppInfo.DefaultTeam;
+        if (!string.IsNullOrWhiteSpace(request.Role) && !Groups.TryParse(request.Role, out team))
+            return BadRequest(new { error = "The role is mentor, coach or advisor" });
+        if (!Groups.IsValid(team)) return BadRequest(new { error = $"Who they are is {Groups.Expected}" });
         var badge = BadgeNumber.Normalize(request.Badge);
         if (badge is not null && !BadgeNumber.IsValid(badge)) return BadRequest(new { error = "A badge is letters and digits only" });
         try
