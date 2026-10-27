@@ -17,7 +17,11 @@ with ASP.NET Core (.NET 10). It runs on the program's robotics server as program
 2. The screen becomes the kiosk, for every team. Teammates scan in; each scan shows
    their name, team, badge number, the date and the time. Nothing else can be opened on
    that screen.
-3. **End meeting** at the bottom of the kiosk asks for any account's password, ends the
+3. A badge nobody has yet shows **Assign this badge** (there's also **Assign a badge** at
+   the bottom). Pick the teammate, or type a new name and team, and approve with your own
+   username and password. The badge is theirs, they're checked in, and the kiosk carries
+   on: the password approves that one change and signs nobody in.
+4. **End meeting** at the bottom of the kiosk asks for any account's password, ends the
    meeting and signs that person in. If nobody does, the meeting ends by itself when its
    time is up, and the screen goes back to the sign-in page. A meeting left running on
    another laptop can be ended from the Start page.
@@ -38,6 +42,7 @@ database, added through the Badges and Import pages. Test code uses made-up name
 | `/login` | Signing in. The only page open without an account |
 | `/` | Start: start a meeting on this screen, meetings open now, today's numbers |
 | `/kiosk` | The kiosk: a clock, the box the scanner types into, the last scan, the last ten (live) |
+| `/kiosk/assign` | Giving someone a badge from the kiosk, signed off with a password; they're checked in |
 | `/kiosk/end` | Ending the meeting, with a password |
 | `/badges` | Who holds which badge: assign, change, clear, add a person |
 | `/scans` | Every scan between two dates, with a CSV download (`/scans.csv`) |
@@ -53,7 +58,7 @@ once; they choose their own the first time they sign in, and it stops working af
 days. Passwords are at least 10 characters and are stored only as PBKDF2 hashes.
 
 - Five wrong passwords in a row lock an account for 15 minutes. One address gets ten
-  sign-in attempts a minute.
+  password attempts a minute (signing in, ending a meeting, assigning at the kiosk).
 - Turning an account off, or giving it a new password, signs it out everywhere at once.
 - A sign-in lasts 12 hours from its last use. Sign-ins survive releases: the keys that
   sign them are kept in the database.

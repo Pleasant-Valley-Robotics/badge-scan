@@ -394,3 +394,100 @@ public class DataKeyTests(TestApp app) : IClassFixture<TestApp>
         Assert.Equal(HttpStatusCode.Unauthorized, (await Program(key).GetAsync("/api/scans/since")).StatusCode);
     }
 }
+
+/// <summary>Giving someone a badge from the kiosk, signed off with a password, without ending the meeting.</summary>
+public class KioskAssignTests(TestApp app) : IClassFixture<TestApp>
+{
+    private static async Task<JsonElement> Body(HttpResponseMessage response)
+        => JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
+
+    private static Task<HttpResponseMessage> Assign(HttpClient kiosk, string badge, Dictionary<string, string> fields)
+    {
+        fields["Badge"] = badge;
+        return TestApp.PostFormAsync(kiosk, $"/kiosk/assign?badge={badge}", fields, "/kiosk/assign");
+    }
+
+    [Fact]
+    public async Task An_unknown_badge_is_given_to_someone_on_the_list_and_they_are_checked_in()
+    {
+        var (mentor, _) = await app.StaffAsync();
+        var person = await Body(await mentor.PostAsJsonAsync("/api/badges", new { team = 6093, name = "No Badge Yet" }));
+        var (kiosk, opener) = await app.KioskAsync("Assign Opener");
+        Assert.Equal(HttpStatusCode.NotFound, (await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3131" })).StatusCode);
+
+        var form = await (await kiosk.GetAsync("/kiosk/assign?badge=3131")).Content.ReadAsStringAsync();
+        Assert.Contains("value=\"3131\"", form);
+        Assert.Contains("No Badge Yet", form);
+
+        var done = await Assign(kiosk, "0000003131", new()
+        {
+            ["PersonId"] = person.GetProperty("id").GetInt64().ToString(),
+            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
+        });
+        Assert.Equal("/kiosk", done.Headers.Location?.OriginalString);
+
+        var kioskPage = await (await kiosk.GetAsync("/kiosk")).Content.ReadAsStringAsync();
+        Assert.Contains("Badge 3131 is now No Badge Yet&#x27;s (team 6093) and checked in.", kioskPage);
+
+        var again = await Body(await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3131" }));
+        Assert.Equal("No Badge Yet", again.GetProperty("name").GetString());
+        Assert.True(again.GetProperty("already").GetBoolean());
+
+        // Still a kiosk: the password approved the badge, it didn't sign anyone in.
+        Assert.Equal("/kiosk", (await kiosk.GetAsync("/badges")).Headers.Location?.OriginalString);
+    }
+
+    [Fact]
+    public async Task A_new_person_can_be_added_with_their_badge()
+    {
+        var (kiosk, opener) = await app.KioskAsync();
+        var done = await Assign(kiosk, "3232", new()
+        {
+            ["PersonId"] = "", ["NewName"] = "Brand New", ["NewTeam"] = "9082",
+            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
+        });
+        Assert.Equal("/kiosk", done.Headers.Location?.OriginalString);
+
+        var scan = await Body(await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3232" }));
+        Assert.Equal("Brand New", scan.GetProperty("name").GetString());
+        Assert.Equal(9082, scan.GetProperty("team").GetInt32());
+    }
+
+    [Fact]
+    public async Task Nothing_is_assigned_without_the_right_password()
+    {
+        var (kiosk, opener) = await app.KioskAsync();
+        var refused = await Assign(kiosk, "3333", new()
+        {
+            ["PersonId"] = "", ["NewName"] = "Sneaky Teammate", ["NewTeam"] = "7196",
+            ["Username"] = opener.Username, ["Password"] = "a guess",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Contains("Wrong username or password.", await refused.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.NotFound, (await kiosk.PostAsJsonAsync("/api/scans", new { badge = "3333" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_badge_someone_on_that_team_has_is_refused()
+    {
+        var (mentor, _) = await app.StaffAsync();
+        await mentor.PostAsJsonAsync("/api/badges", new { team = 38350, name = "Has It", badge = "3434" });
+        var (kiosk, opener) = await app.KioskAsync();
+
+        var refused = await Assign(kiosk, "3434", new()
+        {
+            ["PersonId"] = "", ["NewName"] = "Wants It", ["NewTeam"] = "38350",
+            ["Username"] = opener.Username, ["Password"] = TestApp.Password,
+        });
+
+        Assert.Contains("Badge 3434 already belongs to Has It.", await refused.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Staff_use_the_badges_page_instead()
+    {
+        var (mentor, _) = await app.StaffAsync();
+        Assert.Equal("/badges", (await mentor.GetAsync("/kiosk/assign")).Headers.Location?.OriginalString);
+    }
+}

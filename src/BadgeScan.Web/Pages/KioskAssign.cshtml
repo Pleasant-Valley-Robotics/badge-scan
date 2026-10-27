@@ -1,0 +1,59 @@
+@page "/kiosk/assign"
+@model KioskAssignModel
+@{
+    ViewData["Title"] = "Assign a badge";
+}
+@*
+    Reached from the kiosk: "Assign this badge" on an unknown badge, or "Assign a badge" at
+    the bottom. A lead, coach or mentor signs it off with their password; the meeting goes on.
+*@
+<section class="section">
+    <div class="container narrow-form">
+        <div class="section-head">
+            <span class="eyebrow">Leads, coaches and mentors</span>
+            <h2>Assign a badge</h2>
+            <p class="muted">The badge becomes theirs and they're checked in. The kiosk keeps running.</p>
+        </div>
+        @if (Model.Error is not null)
+        {
+            <p class="notice notice--error" role="alert">@Model.Error</p>
+        }
+        <form method="post" class="card stack" autocomplete="off">
+            <label>Badge
+                <input name="Badge" id="badge" value="@Model.Badge" class="mono" inputmode="numeric" spellcheck="false" required autofocus="@(string.IsNullOrEmpty(Model.Badge))" placeholder="Scan it, or type its number" />
+            </label>
+            <label>Who it's for
+                <select name="PersonId" id="person">
+                    <option value="">Someone new (type below)</option>
+                    @foreach (var team in Model.People.GroupBy(p => p.Team))
+                    {
+                        <optgroup label="Team @team.Key">
+                            @foreach (var p in team)
+                            {
+                                <option value="@p.Id" selected="@(Model.PersonId == p.Id)">@p.Name@(p.BadgeNumber is null ? "" : $" (has badge {p.BadgeNumber})")</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </label>
+            <div class="new-person" id="new-person">
+                <label>New person's name <input name="NewName" value="@Model.NewName" /></label>
+                <label>Team <input name="NewTeam" type="number" min="1" value="@Model.NewTeam" /></label>
+            </div>
+            <hr />
+            <p class="small muted">Approve with your own sign-in:</p>
+            <label>Username
+                <input name="Username" value="@Model.Username" autocomplete="off" autocapitalize="none" spellcheck="false" required autofocus="@(!string.IsNullOrEmpty(Model.Badge))" />
+            </label>
+            <label>Password
+                <input name="Password" type="password" autocomplete="off" required />
+            </label>
+            <button class="btn btn--primary" type="submit">Assign badge</button>
+            <a class="btn btn--ghost" href="/kiosk">Back to the kiosk</a>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/assign.js" asp-append-version="true"></script>
+}
