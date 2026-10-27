@@ -22,6 +22,9 @@ public static class DatabaseOptions
             Password = configuration["PGPASSWORD"],
             Database = configuration["PGDATABASE"],
             SslMode = SslMode.Prefer,
+            // The server's PostgreSQL doesn't use Kerberos, and the container has no library
+            // for it; without this every start logs "libgssapi_krb5.so.2" as an error.
+            GssEncryptionMode = GssEncryptionMode.Disable,
             ApplicationName = "badge-scan",
         }.ConnectionString;
     }

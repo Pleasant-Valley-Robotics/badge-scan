@@ -118,6 +118,9 @@ public static class SignIns
             })
             .AddScheme<AuthenticationSchemeOptions, DataKeyHandler>(KeyScheme, null);
 
+        // The forms' hidden-token cookie, like the sign-in cookie: Secure whenever the visitor used https.
+        services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
+
         var staffOnly = new AuthorizationPolicyBuilder(CookieScheme).RequireClaim(Kind, Staff).Build();
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(staffOnly)
