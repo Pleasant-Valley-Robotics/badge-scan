@@ -18,9 +18,9 @@ with ASP.NET Core (.NET 10). It runs on the program's robotics server as program
    their name, team, badge number, the date and the time. Nothing else can be opened on
    that screen.
 3. A badge nobody has yet shows **Assign this badge** (there's also **Assign a badge** at
-   the bottom). Pick the teammate, or type a new name and team, and approve with your own
-   username and password. The badge is theirs, they're checked in, and the kiosk carries
-   on: the password approves that one change and signs nobody in.
+   the bottom). Pick the person, or type a new name and choose their team, or Mentor,
+   Coach or Advisor. No password is asked for. The badge is theirs, they're checked in,
+   and the kiosk carries on; nobody is signed in.
 4. **End meeting** at the bottom of the kiosk asks for any account's password, ends the
    meeting and signs that person in. If nobody does, the meeting ends by itself when its
    time is up, and the screen goes back to the sign-in page. A meeting left running on
@@ -42,7 +42,7 @@ database, added through the Badges and Import pages. Test code uses made-up name
 | `/login` | Signing in. The only page open without an account |
 | `/` | Start: start a meeting on this screen, meetings open now, today's numbers |
 | `/kiosk` | The kiosk: a clock, the box the scanner types into, the last scan, the last ten (live) |
-| `/kiosk/assign` | Giving someone a badge from the kiosk, signed off with a password; they're checked in |
+| `/kiosk/assign` | Giving someone a badge from the kiosk (no password); they're checked in |
 | `/kiosk/end` | Ending the meeting, with a password |
 | `/badges` | Who holds which badge: assign, change, clear, add a person |
 | `/scans` | Every scan between two dates, with a CSV download (`/scans.csv`) |
@@ -58,7 +58,7 @@ once; they choose their own the first time they sign in, and it stops working af
 days. Passwords are at least 10 characters and are stored only as PBKDF2 hashes.
 
 - Five wrong passwords in a row lock an account for 15 minutes. One address gets ten
-  password attempts a minute (signing in, ending a meeting, assigning at the kiosk).
+  password attempts a minute (signing in, ending a meeting).
 - Turning an account off, or giving it a new password, signs it out everywhere at once.
 - A sign-in lasts 12 hours from its last use. Sign-ins survive releases: the keys that
   sign them are kept in the database.
@@ -101,7 +101,7 @@ code: anyone who can read the page could read the key.
 | `GET` | `/api/scans/since?after=0&limit=500` | every scan after an id, oldest first. Staff or data key |
 | `GET` | `/api/scans/stream` | server-sent events, one `scan` event per new scan. Kiosk or staff |
 | `POST` | `/api/scans/import` | a CSV body `name,team,stamp` |
-| `GET` `POST` | `/api/badges` | the people; add one `{ "team": 7196, "name": "…", "badge": "27" }` |
+| `GET` `POST` | `/api/badges` | the people; add one `{ "team": 7196, "name": "…", "badge": "27" }`, or `"role": "mentor"` instead of a team |
 | `PUT` `DELETE` | `/api/badges/{id}` | `{ "badge": "27" }` or `{ "badge": null }`; remove a person |
 | `POST` | `/api/badges/import` | a CSV body `name,team,badge` |
 
@@ -109,6 +109,17 @@ Everything else is for a signed-in lead, coach or mentor. Who may do what is in
 `Services/SignIns.cs`. A scan carries `name`, `team`, `badge`, `stamp`, `dateText`
 ("Tuesday, October 27, 2026"), `timeText` ("5:17 PM CDT"), `scannedUtc`,
 `scannedCentral`, `firstOfDay`, `recognised`, `meetingId` and `openedBy`.
+
+### Mentors, coaches and advisors
+
+Adults who aren't on a team are a Mentor, Coach or Advisor instead. In JSON they have
+`"team": null`, `"role": "mentor"` (or `coach`, `advisor`) and `"group": "Mentor"`; a
+teammate has `"role": null` and `"group": "Team 7196"`. Wherever a team is asked for
+(`?team=`, the CSV `team` column, the Badges and Scans pages) you can write `mentor`,
+`coach` or `advisor` too, and the spreadsheet's team column says `Mentor`. In the
+database a role is a negative `team_number` (−1 mentor, −2 coach, −3 advisor; see
+`Models/Groups.cs`), so each role works like a team of its own: one check-in a day, and
+a badge number can't be used twice within it.
 
 ## Run it on your computer
 

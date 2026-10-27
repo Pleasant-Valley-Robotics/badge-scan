@@ -25,7 +25,13 @@ public sealed record ScanResult
     public bool Ok => true;
     public required long Id { get; init; }
     [JsonPropertyName("badge")] public required string? BadgeNumber { get; init; }
-    public required int? Team { get; init; }
+    /// <summary>The person's team, or a role's code (Groups). Null when the badge wasn't recognised.</summary>
+    [JsonIgnore] public required int? Team { get; init; }
+    [JsonPropertyName("team")] public int? TeamNumber => Groups.TeamNumber(Team);
+    /// <summary>"mentor", "coach" or "advisor" for someone not on a team.</summary>
+    public string? Role => Groups.RoleName(Team);
+    /// <summary>"Team 7196" or "Mentor", for the kiosk screen.</summary>
+    public string Group => Groups.Label(Team);
     public required string? Name { get; init; }
     public required bool Recognised { get; init; }
     public required bool FirstOfDay { get; init; }

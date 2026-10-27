@@ -103,6 +103,13 @@
     }
   });
 
+  // The team box takes a team number, or Mentor, Coach or Advisor.
+  const group = (text) => {
+    const t = String(text || '').trim().replace(/^team\s+/i, '');
+    if (!t) return { team: defaultTeam };
+    return /^\d+$/.test(t) ? { team: Number(t) } : { role: t };
+  };
+
   // Add a person. The page reloads so the new row lands in alphabetical order.
   document.getElementById('add').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -110,7 +117,7 @@
     try {
       const saved = await api('POST', '/api/badges', {
         name: form.get('name'),
-        team: form.get('team') ? Number(form.get('team')) : defaultTeam,
+        ...group(form.get('team')),
         badge: form.get('badge') || null,
       });
       sessionStorage.setItem('badges-message', `Added ${saved.name}${saved.badgeNumber ? ` with badge ${saved.badgeNumber}` : ''}`);

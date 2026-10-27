@@ -45,8 +45,9 @@ public sealed class ScansApiController(IBadgeScanStore store, ScanRecorder recor
     /// </summary>
     [HttpGet]
     [Authorize(Policy = SignIns.Policies.RecentScans)]
-    public async Task<IActionResult> List([FromQuery] DateOnly? date, [FromQuery] DateOnly? to, [FromQuery] int? team, [FromQuery] int? limit, CancellationToken ct)
+    public async Task<IActionResult> List([FromQuery] DateOnly? date, [FromQuery] DateOnly? to, [FromQuery(Name = "team")] string? group, [FromQuery] int? limit, CancellationToken ct)
     {
+        if (!TryGroup(group, out var team)) return BadRequest(new { ok = false, error = $"team is {Groups.Expected}" });
         if (User.IsKiosk())
         {
             date = to = null;
@@ -56,7 +57,7 @@ public sealed class ScansApiController(IBadgeScanStore store, ScanRecorder recor
         var until = to ?? from;
         if (until < from) return BadRequest(new { ok = false, error = "'to' is before 'date'" });
         var scans = await store.ScansForDatesAsync(from, until, team, limit, ct);
-        return Ok(new { date = from, to = until, team, scans });
+        return Ok(new { date = from, to = until, team = group, scans });
     }
 
     /// <summary>
@@ -142,20 +143,31 @@ public sealed class ScansApiController(IBadgeScanStore store, ScanRecorder recor
     /// <summary>The same list as a spreadsheet: /scans.csv?date=2026-10-08&to=2026-10-31&team=7196</summary>
     [HttpGet("/scans.csv")]
     [Authorize(Policy = SignIns.Policies.ReadScans)]
-    public async Task<IActionResult> Csv([FromQuery] DateOnly? date, [FromQuery] DateOnly? to, [FromQuery] int? team, CancellationToken ct)
+    public async Task<IActionResult> Csv([FromQuery] DateOnly? date, [FromQuery] DateOnly? to, [FromQuery(Name = "team")] string? group, CancellationToken ct)
     {
+        if (!TryGroup(group, out var team)) return BadRequest(new { ok = false, error = $"team is {Groups.Expected}" });
         var from = date ?? CentralTime.Today(clock);
         var until = to ?? from;
         var scans = await store.ScansForDatesAsync(from, until, team, null, ct);
         var lines = new List<string> { Services.Csv.Line("id", "stamp", "name", "team", "badge", "first_of_day", "recognised", "central_zone", "scanned_central", "scanned_utc", "source", "opened_by", "meeting_id") };
         foreach (var s in scans.Reverse())
         {
-            lines.Add(Services.Csv.Line(s.Id.ToString(), s.Stamp, s.Name, s.Team?.ToString(), s.BadgeNumber,
+            lines.Add(Services.Csv.Line(s.Id.ToString(), s.Stamp, s.Name, Groups.Short(s.Team), s.BadgeNumber,
                 s.FirstOfDay ? "true" : "false", s.Recognised ? "true" : "false", s.CentralZone,
                 s.ScannedCentral.ToString("yyyy-MM-dd HH:mm:ss"), s.ScannedUtc.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss'Z'"), s.Source, s.OpenedBy, s.MeetingId?.ToString()));
         }
         var name = until == from ? $"badge-scans-{from:yyyy-MM-dd}.csv" : $"badge-scans-{from:yyyy-MM-dd}-to-{until:yyyy-MM-dd}.csv";
         return File(System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", lines) + "\r\n"), "text/csv; charset=utf-8", name);
+    }
+
+    /// <summary>?team=7196 or ?team=mentor; blank is everyone.</summary>
+    private static bool TryGroup(string? text, out int? team)
+    {
+        team = null;
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        if (!Groups.TryParse(text, out var code)) return false;
+        team = code;
+        return true;
     }
 
     private async Task<long> WriteEvent(ScanResult scan, CancellationToken ct)

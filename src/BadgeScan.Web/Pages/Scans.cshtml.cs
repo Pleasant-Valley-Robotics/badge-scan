@@ -11,7 +11,8 @@ public class ScansModel(IBadgeScanStore store, TimeProvider clock) : PageModel
 {
     [BindProperty(SupportsGet = true)] public DateOnly? Date { get; set; }
     [BindProperty(SupportsGet = true)] public DateOnly? To { get; set; }
-    [BindProperty(SupportsGet = true)] public int? Team { get; set; }
+    /// <summary>A team number, or mentor, coach or advisor; blank is everyone.</summary>
+    [BindProperty(SupportsGet = true)] public string? Team { get; set; }
 
     /// <summary>The dates actually shown, once the blanks are filled in.</summary>
     public DateOnly From => Date!.Value;
@@ -24,6 +25,7 @@ public class ScansModel(IBadgeScanStore store, TimeProvider clock) : PageModel
         Date ??= CentralTime.Today(clock);
         To ??= Date;
         if (To < Date) To = Date;
-        Scans = await store.ScansForDatesAsync(Date.Value, To.Value, Team, 2000, ct);
+        int? team = Groups.TryParse(Team, out var code) ? code : null;
+        Scans = await store.ScansForDatesAsync(Date.Value, To.Value, team, 2000, ct);
     }
 }

@@ -2,7 +2,7 @@
 @model ScansModel
 @{
     ViewData["Title"] = "Scans";
-    var csv = $"/scans.csv?date={Model.From:yyyy-MM-dd}&to={Model.Until:yyyy-MM-dd}{(Model.Team is null ? "" : $"&team={Model.Team}")}";
+    var csv = $"/scans.csv?date={Model.From:yyyy-MM-dd}&to={Model.Until:yyyy-MM-dd}{(string.IsNullOrWhiteSpace(Model.Team) ? "" : $"&team={Uri.EscapeDataString(Model.Team)}")}";
 }
 <section class="section">
     <div class="container">
@@ -14,7 +14,7 @@
         <form method="get" class="toolbar">
             <label>From <input type="date" name="date" value="@Model.From.ToString("yyyy-MM-dd")" /></label>
             <label>To <input type="date" name="to" value="@Model.Until.ToString("yyyy-MM-dd")" /></label>
-            <label>Team <input type="number" name="team" min="1" value="@(Model.Team?.ToString())" placeholder="all" /></label>
+            <label>Team <input name="team" value="@Model.Team" placeholder="all, a number, or Mentor" size="12" /></label>
             <button class="btn btn--ghost btn--sm" type="submit">Show</button>
             <a class="btn btn--primary btn--sm" href="@csv">Download CSV</a>
         </form>
@@ -34,7 +34,7 @@
                     <tr class="@(s.Recognised ? "" : "is-unknown")">
                         <td><code>@s.Stamp</code></td>
                         <td>@(s.Name ?? "unknown badge")</td>
-                        <td class="muted">@s.Team</td>
+                        <td class="muted">@Groups.Short(s.Team)</td>
                         <td><code>@s.BadgeNumber</code></td>
                         <td>@(s.FirstOfDay ? "first of day" : s.Recognised ? "again" : "not recognised")@(s.Source == "import" ? " · imported" : "")</td>
                         <td class="muted">@s.OpenedBy</td>
