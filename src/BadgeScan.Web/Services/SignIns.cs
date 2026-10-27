@@ -39,6 +39,9 @@ public static class SignIns
         public const string RecentScans = "recent";   // staff, kiosk or program
     }
 
+    /// <summary>The forms that take a password, and so are limited per visitor.</summary>
+    private static readonly HashSet<string?> SignInPaths = new(StringComparer.OrdinalIgnoreCase) { "/login", "/kiosk/end", "/kiosk/assign" };
+
     private static readonly object AccountItem = new();
     private static readonly object MeetingItem = new();
 
@@ -138,7 +141,7 @@ public static class SignIns
             options.OnRejected = (context, ct) => new ValueTask(context.HttpContext.Response.WriteAsync(
                 "Too many sign-in attempts from here. Wait a minute and try again.", ct));
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                context.Request.Method == "POST" && (context.Request.Path == "/login" || context.Request.Path == "/kiosk/end")
+                context.Request.Method == "POST" && SignInPaths.Contains(context.Request.Path.Value)
                     ? RateLimitPartition.GetFixedWindowLimiter(ClientAddress(context),
                         _ => new FixedWindowRateLimiterOptions { PermitLimit = perMinute, Window = TimeSpan.FromMinutes(1) })
                     : RateLimitPartition.GetNoLimiter(""));

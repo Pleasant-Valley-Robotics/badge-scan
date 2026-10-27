@@ -21,11 +21,17 @@
         <input id="badge" class="kiosk-input" autocomplete="off" spellcheck="false" inputmode="numeric"
                placeholder="Scan a badge, or type its number and press Enter" />
 
+        @if (TempData["Saved"] is string saved)
+        {
+            <p class="notice notice--ok kiosk-saved" role="status">@saved</p>
+        }
+
         <div id="banner" class="kiosk-banner" role="status" hidden>
             <p class="kiosk-result" id="result"></p>
             <p class="kiosk-name" id="who"></p>
             <p class="kiosk-facts" id="facts"></p>
             <p class="kiosk-when" id="when"></p>
+            <a class="btn btn--ghost btn--sm kiosk-assign" id="assign" href="/kiosk/assign" hidden>Assign this badge</a>
         </div>
 
         <div class="kiosk-recent-wrap">
@@ -35,6 +41,7 @@
 
         <p class="kiosk-meeting muted">
             Meeting opened by @Model.Meeting.OpenedByName · ends at @IndexModel.Clock(Model.Meeting.EndsUtc) ·
+            <a href="/kiosk/assign">Assign a badge</a> ·
             <a href="/kiosk/end">End meeting</a>
         </p>
     </div>

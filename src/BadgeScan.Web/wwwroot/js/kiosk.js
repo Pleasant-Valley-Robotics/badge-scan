@@ -13,6 +13,7 @@
   const who = document.getElementById('who');
   const facts = document.getElementById('facts');
   const when = document.getElementById('when');
+  const assign = document.getElementById('assign');
   const recent = document.getElementById('recent');
   const live = document.getElementById('live');
   const seen = new Set();
@@ -42,15 +43,18 @@
   setInterval(() => { if (document.activeElement !== input) focus(); }, 2000);
 
   // ---- one scan: what happened, who, their team and badge, and when ----
-  const show = (tone, heading, name = '', detail = '', time = '') => {
+  // unknownBadge: offer "Assign this badge" (a lead signs it off) and leave the message up longer.
+  const show = (tone, heading, name = '', detail = '', time = '', unknownBadge = null) => {
     banner.className = `kiosk-banner is-${tone}`;
     result.textContent = heading;
     who.textContent = name;
     facts.textContent = detail;
     when.textContent = time;
+    assign.hidden = !unknownBadge;
+    if (unknownBadge) assign.href = `/kiosk/assign?badge=${encodeURIComponent(unknownBadge)}`;
     banner.hidden = false;
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => { banner.hidden = true; }, 6000);
+    hideTimer = setTimeout(() => { banner.hidden = true; }, unknownBadge ? 20000 : 6000);
   };
   // "17:05" from a stamp like Th10/08/2026|17:05, as "5:05 PM".
   const twelveHour = (stamp) => {
@@ -79,7 +83,8 @@
       if (res.status === 401) { ended(); return; }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        show('error', body.error || `Could not save the scan (${res.status})`, '', body.badge ? `Badge ${body.badge}` : '');
+        show('error', body.error || `Could not save the scan (${res.status})`, '', body.badge ? `Badge ${body.badge}` : '', '',
+          res.status === 404 && body.badge ? body.badge : null);
       } else {
         showScan(body);
         add(body);
