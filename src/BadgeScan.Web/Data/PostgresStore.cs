@@ -9,7 +9,7 @@ public sealed class PostgresStore(NpgsqlDataSource db) : IBadgeScanStore
 {
     private const string BadgeColumns = "id, team_number, person_name, badge_number";
     private const string ScanColumns =
-        "id, badge_number, team_number, person_name, recognised, first_of_day, scanned_utc, scanned_central, central_zone, central_date, stamp, source";
+        "id, badge_number, team_number, person_name, recognised, first_of_day, scanned_utc, scanned_central, central_zone, central_date, stamp, source, meeting_id, opened_by";
 
     public async Task<IReadOnlyList<Badge>> ListBadgesAsync(int? team, CancellationToken ct)
     {
@@ -95,12 +95,12 @@ public sealed class PostgresStore(NpgsqlDataSource db) : IBadgeScanStore
                 : "";
             await using var cmd = db.CreateCommand($"""
                 INSERT INTO badge_scans (badge_number, team_number, person_name, recognised, first_of_day,
-                                         scanned_utc, scanned_central, central_zone, central_date, stamp, source)
+                                         scanned_utc, scanned_central, central_zone, central_date, stamp, source, meeting_id, opened_by)
                 VALUES ($1, $2, $3, $4,
                         $4 AND NOT $11 AND NOT EXISTS (
                             SELECT 1 FROM badge_scans s
                             WHERE s.team_number = $2 AND s.person_name = $3 AND s.central_date = $9 AND s.first_of_day),
-                        $5, $6, $7, $9, $8, $10)
+                        $5, $6, $7, $9, $8, $10, $12, $13)
                 {conflict}
                 RETURNING {ScanColumns}
                 """);
@@ -115,6 +115,8 @@ public sealed class PostgresStore(NpgsqlDataSource db) : IBadgeScanStore
             cmd.Parameters.Add(new NpgsqlParameter<DateOnly> { TypedValue = scan.Central.Date, NpgsqlDbType = NpgsqlDbType.Date });
             cmd.Parameters.Add(Text(scan.Source));
             cmd.Parameters.Add(new NpgsqlParameter<bool> { TypedValue = forceRepeat });
+            cmd.Parameters.Add(new NpgsqlParameter<long?> { TypedValue = scan.MeetingId, NpgsqlDbType = NpgsqlDbType.Bigint });
+            cmd.Parameters.Add(Text(scan.OpenedBy));
             try
             {
                 var rows = await ReadScans(cmd, ct);
@@ -149,6 +151,14 @@ public sealed class PostgresStore(NpgsqlDataSource db) : IBadgeScanStore
         cmd.Parameters.Add(new NpgsqlParameter<DateOnly> { TypedValue = to, NpgsqlDbType = NpgsqlDbType.Date });
         cmd.Parameters.Add(Int(team));
         cmd.Parameters.Add(Int(limit));   // LIMIT NULL means no limit
+        return await ReadScans(cmd, ct);
+    }
+
+    public async Task<IReadOnlyList<ScanResult>> ScansSinceAsync(long afterId, int limit, CancellationToken ct)
+    {
+        await using var cmd = db.CreateCommand($"SELECT {ScanColumns} FROM badge_scans WHERE id > $1 ORDER BY id LIMIT $2");
+        cmd.Parameters.Add(new NpgsqlParameter<long> { TypedValue = afterId });
+        cmd.Parameters.Add(Int(limit));
         return await ReadScans(cmd, ct);
     }
 
@@ -206,6 +216,8 @@ public sealed class PostgresStore(NpgsqlDataSource db) : IBadgeScanStore
                 CentralDate = reader.GetFieldValue<DateOnly>(9),
                 Stamp = reader.GetString(10),
                 Source = reader.GetString(11),
+                MeetingId = reader.IsDBNull(12) ? null : reader.GetInt64(12),
+                OpenedBy = reader.IsDBNull(13) ? null : reader.GetString(13),
             });
         }
         return list;

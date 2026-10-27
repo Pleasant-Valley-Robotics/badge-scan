@@ -1,35 +1,70 @@
 @page
+@model IndexModel
 @{
-    ViewData["Title"] = "Kiosk";
-    // Open the kiosk with ?team=38350 when a badge number is used on more than one team.
-    var team = Request.Query["team"].ToString();
+    ViewData["Title"] = "Start";
+    var name = HttpContext.CurrentAccount()!.DisplayName;
 }
 @*
-    The laptop at the door. A lead signs in, opens this, and walks away; people scan their
-    badges as they arrive. The scan box keeps hold of focus so the scanner's keystrokes
-    always land in it. wwwroot/js/kiosk.js does the work.
+    The first page after signing in. "Start the meeting" turns this browser into the kiosk:
+    from then on it can only take badge scans, until someone ends the meeting with their
+    password or its time runs out.
 *@
-<section class="section kiosk" data-team="@team">
-    <div class="container kiosk-wrap">
-        <div class="kiosk-head">
-            <p class="kiosk-clock" id="clock" aria-live="off">--:--</p>
-            <p class="kiosk-date muted" id="date"></p>
-            <p class="eyebrow">Scan your badge to check in</p>
+<section class="section">
+    <div class="container narrow">
+        <div class="section-head">
+            <span class="eyebrow">Hi, @name</span>
+            <h2>Start a meeting</h2>
+            <p class="muted">Do this on the laptop at the door. The screen becomes the badge kiosk for every team: teammates scan in, and nobody can open anything else on it until you end the meeting with your password.</p>
         </div>
 
-        <label class="kiosk-label" for="badge">Scan badge</label>
-        <input id="badge" class="kiosk-input" autocomplete="off" spellcheck="false" inputmode="numeric"
-               placeholder="Scan a badge, or type its number and press Enter" />
+        @if (Model.Message is not null)
+        {
+            <p class="notice notice--ok" role="status">@Model.Message</p>
+        }
 
-        <div id="banner" class="kiosk-banner" role="status" hidden></div>
+        <form method="post" asp-page-handler="Start" class="card start-meeting">
+            <label>The meeting lasts
+                <select name="hours">
+                    @foreach (var h in IndexModel.Hours)
+                    {
+                        <option value="@h" selected="@(h == IndexModel.DefaultHours)">@h hour@(h == 1 ? "" : "s")</option>
+                    }
+                </select>
+            </label>
+            <button class="btn btn--primary" type="submit">Start the meeting on this screen</button>
+            <p class="muted small">It ends by itself after that, in case nobody remembers to.</p>
+        </form>
 
-        <div class="kiosk-recent-wrap">
-            <h3>Recent scans <span id="live" class="pill" hidden>reconnecting…</span></h3>
-            <ul id="recent" class="kiosk-recent"></ul>
+        <div class="grid grid--2 stats">
+            <div class="card"><span class="stat">@Model.CheckedInToday</span> checked in today</div>
+            <div class="card"><span class="stat">@Model.UnknownToday</span> scans of unknown badges today <a href="/scans">see them</a></div>
         </div>
+
+        <h3>Meetings open now</h3>
+        @if (Model.OpenMeetings.Count == 0)
+        {
+            <p class="muted">None.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Opened by</th><th>Started</th><th>Ends</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var m in Model.OpenMeetings)
+                {
+                    <tr>
+                        <td>@m.OpenedByName</td>
+                        <td class="muted">@IndexModel.Clock(m.StartedUtc)</td>
+                        <td class="muted">@IndexModel.Clock(m.EndsUtc)</td>
+                        <td class="actions">
+                            <form method="post" asp-page-handler="End" asp-route-id="@m.Id">
+                                <button class="btn-link" type="submit">End it</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
     </div>
 </section>
-
-@section Scripts {
-    <script src="~/js/kiosk.js" asp-append-version="true"></script>
-}

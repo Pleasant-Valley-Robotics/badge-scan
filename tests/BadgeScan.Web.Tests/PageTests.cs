@@ -7,25 +7,41 @@ namespace BadgeScan.Web.Tests;
 /// These tests start the whole site in memory and visit its pages, the way a browser
 /// would. GitHub runs them on every pull request. Run them yourself with:  dotnet test
 /// </summary>
-public class PageTests(TestApp app) : IClassFixture<TestApp>
+public class PageTests(TestApp app) : IClassFixture<TestApp>, IAsyncLifetime
 {
-    private readonly HttpClient _client = app.CreateClient();
+    private HttpClient _client = null!;
 
-    private async Task<string> HomePage()
+    public async Task InitializeAsync() => _client = (await app.StaffAsync()).Client;
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    private static async Task<string> Html(HttpClient client, string url)
     {
-        var response = await _client.GetAsync("/");
+        var response = await client.GetAsync(url);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return Regex.Replace(await response.Content.ReadAsStringAsync(), "<!--.*?-->", "", RegexOptions.Singleline);
     }
 
+    private Task<string> HomePage() => Html(_client, "/");
+
     [Fact]
-    public async Task Kiosk_shows_the_scan_box_and_menu()
+    public async Task Start_page_has_the_menu_and_starts_a_meeting()
     {
         var html = await HomePage();
 
+        Assert.Contains("<nav", html);
+        Assert.Contains("Start the meeting on this screen", html);
+    }
+
+    [Fact]
+    public async Task Kiosk_shows_the_scan_box_and_no_menu()
+    {
+        var (kiosk, _) = await app.KioskAsync("Pat Opener");
+        var html = await Html(kiosk, "/kiosk");
+
         Assert.Contains("id=\"badge\"", html);
         Assert.Contains("Scan your badge to check in", html);
-        Assert.Contains("<nav", html);
+        Assert.Contains("Meeting opened by Pat Opener", html);
+        Assert.DoesNotContain("<nav", html);
     }
 
     [Fact]
@@ -45,11 +61,12 @@ public class PageTests(TestApp app) : IClassFixture<TestApp>
     [Fact]
     public async Task Every_picture_and_script_on_the_kiosk_exists()
     {
-        var sources = Regex.Matches(await HomePage(), "src=\"(/[^\"?]+)").Select(m => m.Groups[1].Value).Distinct();
+        var (kiosk, _) = await app.KioskAsync();
+        var sources = Regex.Matches(await Html(kiosk, "/kiosk"), "src=\"(/[^\"?]+)").Select(m => m.Groups[1].Value).Distinct();
 
         foreach (var src in sources)
         {
-            var response = await _client.GetAsync(src);
+            var response = await kiosk.GetAsync(src);
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"The kiosk uses {src}, but there is no such file in wwwroot/.");
         }
     }

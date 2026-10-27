@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using BadgeScan.Web.Services;
 
@@ -11,7 +12,9 @@ public sealed record NewScan(
     bool Recognised,
     DateTimeOffset Utc,
     CentralTime.Parts Central,
-    string Source);
+    string Source,
+    long? MeetingId = null,
+    string? OpenedBy = null);
 
 /// <summary>
 /// One saved scan, as the kiosk, the lists and the live stream all see it. The JSON names
@@ -36,4 +39,12 @@ public sealed record ScanResult
     public required string CentralZone { get; init; }
     public required DateOnly CentralDate { get; init; }
     public required string Source { get; init; }
+    /// <summary>The meeting the scan came through, and the name of whoever opened it. Null for older and imported scans.</summary>
+    public long? MeetingId { get; init; }
+    public string? OpenedBy { get; init; }
+
+    /// <summary>For the kiosk screen: "Tuesday, October 27, 2026".</summary>
+    public string DateText => ScannedCentral.ToString("dddd, MMMM d, yyyy", CultureInfo.InvariantCulture);
+    /// <summary>For the kiosk screen: "5:17 PM CDT".</summary>
+    public string TimeText => $"{ScannedCentral.ToString("h:mm tt", CultureInfo.InvariantCulture)} {CentralZone}";
 }

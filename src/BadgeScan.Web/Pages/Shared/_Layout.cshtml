@@ -1,11 +1,15 @@
 @*
     The frame around every page: the browser tab's title, the menu at the top and the
     footer at the bottom. Each page's own content appears where @RenderBody() is.
+    The menu is only for a signed-in lead, coach or mentor: the kiosk and the sign-in page
+    show just the name.
 *@
 @inject StoreInfo Store
 @inject IWebHostEnvironment Env
 @{
     var currentPath = Context.Request.Path.Value?.TrimEnd('/') is { Length: > 0 } p ? p : "/";
+    var account = Context.CurrentAccount();
+    var showMenu = account is { MustChangePassword: false };
 }
 <!doctype html>
 <html lang="en">
@@ -24,19 +28,28 @@
 
     <header class="header">
         <div class="container bar">
-            <a class="brand" href="/">
+            <a class="brand" href="@(User.IsKiosk() ? "/kiosk" : "/")">
                 <img src="/images/pv-logo.png" alt="" width="40" height="40" style="background: #ffffff" />
                 <span>@AppInfo.Name</span>
             </a>
-            <nav aria-label="Main">
-                <ul>
-                    @foreach (var (label, href) in AppInfo.Nav)
-                    {
-                        <li><a href="@href" aria-current="@(currentPath == href ? "page" : null)">@label</a></li>
-                    }
-                    <li><a href="@AppInfo.PvSite">PV Robotics ↗</a></li>
-                </ul>
-            </nav>
+            @if (showMenu)
+            {
+                <nav aria-label="Main">
+                    <ul>
+                        @foreach (var (label, href) in AppInfo.Nav)
+                        {
+                            <li><a href="@href" aria-current="@(currentPath == href ? "page" : null)">@label</a></li>
+                        }
+                    </ul>
+                </nav>
+            }
+            @if (account is not null)
+            {
+                <form method="post" action="/logout" class="signed-in" asp-antiforgery="true">
+                    <a href="/account/password" class="muted" title="Change your password">@account.DisplayName</a>
+                    <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+                </form>
+            }
         </div>
     </header>
 

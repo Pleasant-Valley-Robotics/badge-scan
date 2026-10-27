@@ -27,7 +27,7 @@
         {
             <p class="muted">@Model.Scans.Count scans, newest first.</p>
             <table class="table">
-                <thead><tr><th>Stamp</th><th>Name</th><th>Team</th><th>Badge</th><th>Check-in</th><th>Central</th><th>UTC</th></tr></thead>
+                <thead><tr><th>Stamp</th><th>Name</th><th>Team</th><th>Badge</th><th>Check-in</th><th>Opened by</th><th>Central</th><th>UTC</th></tr></thead>
                 <tbody>
                 @foreach (var s in Model.Scans)
                 {
@@ -37,6 +37,7 @@
                         <td class="muted">@s.Team</td>
                         <td><code>@s.BadgeNumber</code></td>
                         <td>@(s.FirstOfDay ? "first of day" : s.Recognised ? "again" : "not recognised")@(s.Source == "import" ? " · imported" : "")</td>
+                        <td class="muted">@s.OpenedBy</td>
                         <td class="muted">@s.ScannedCentral.ToString("yyyy-MM-dd HH:mm:ss") @s.CentralZone</td>
                         <td class="muted">@s.ScannedUtc.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss")Z</td>
                     </tr>
