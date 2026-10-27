@@ -76,8 +76,11 @@ sudo robotics-team docker 1 exec live-web-1 dotnet BadgeScan.Web.dll account lis
 
 ## Data keys: reading the scans from another program
 
-Make a key on the Accounts page; it is shown once. A key can read scans and nothing else,
-and can be revoked there. The program sends it in a header, never in the address:
+**Building the Project-Tracker side? Start with [docs/project-tracker.md](docs/project-tracker.md).**
+
+Make a key on the Accounts page; it is shown once. A key can read scans and the badge
+list (`GET /api/badges`) and nothing else, and can be revoked there. `GET /api/me`
+answers `{"kind":"program","name":"…"}` to check a key works. The program sends it in a header, never in the address:
 
 ```bash
 curl -H "Authorization: Bearer bsk_…" "https://attendance.firstpvrobotics.com/api/scans/since?after=0"
@@ -99,9 +102,10 @@ code: anyone who can read the page could read the key.
 | `POST` | `/api/scans` | `{ "badge": "0000000027" }` → the saved scan; 404 when the badge is unknown. Kiosk or staff |
 | `GET` | `/api/scans?date=2026-10-08&to=…&team=…&limit=…` | scans for a Central date or range, newest first. A kiosk gets today's last ten only |
 | `GET` | `/api/scans/since?after=0&limit=500` | every scan after an id, oldest first. Staff or data key |
+| `GET` | `/api/me` | who is asking: `{ "kind": "program", "name": "Project-Tracker" }`. Staff, kiosk or data key |
 | `GET` | `/api/scans/stream` | server-sent events, one `scan` event per new scan. Kiosk or staff |
 | `POST` | `/api/scans/import` | a CSV body `name,team,stamp` |
-| `GET` `POST` | `/api/badges` | the people; add one `{ "team": 7196, "name": "…", "badge": "27" }`, or `"role": "mentor"` instead of a team |
+| `GET` `POST` | `/api/badges` | the people (reading: staff or data key); add one `{ "team": 7196, "name": "…", "badge": "27" }`, or `"role": "mentor"` instead of a team |
 | `PUT` `DELETE` | `/api/badges/{id}` | `{ "badge": "27" }` or `{ "badge": null }`; remove a person |
 | `POST` | `/api/badges/import` | a CSV body `name,team,badge` |
 

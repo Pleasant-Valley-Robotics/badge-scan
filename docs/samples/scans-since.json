@@ -1,0 +1,27 @@
+{
+  "after": 0,
+  "next": 3,
+  "scans": [
+    {
+      "id": 1, "badge": "27", "team": 7196, "role": null, "group": "Team 7196", "name": "Jane Example",
+      "recognised": true, "firstOfDay": true, "already": false, "firstStamp": null,
+      "stamp": "Tu10/27/2026|17:05", "scannedUtc": "2026-10-27T22:05:12.4+00:00", "scannedCentral": "2026-10-27T17:05:12.4",
+      "centralZone": "CDT", "centralDate": "2026-10-27", "source": "kiosk", "meetingId": 4, "openedBy": "Andrew Meckley",
+      "dateText": "Tuesday, October 27, 2026", "timeText": "5:05 PM CDT"
+    },
+    {
+      "id": 2, "badge": "41", "team": null, "role": "mentor", "group": "Mentor", "name": "Pat Example",
+      "recognised": true, "firstOfDay": true, "already": false, "firstStamp": null,
+      "stamp": "Tu10/27/2026|17:06", "scannedUtc": "2026-10-27T22:06:40.1+00:00", "scannedCentral": "2026-10-27T17:06:40.1",
+      "centralZone": "CDT", "centralDate": "2026-10-27", "source": "kiosk", "meetingId": 4, "openedBy": "Andrew Meckley",
+      "dateText": "Tuesday, October 27, 2026", "timeText": "5:06 PM CDT"
+    },
+    {
+      "id": 3, "badge": "27", "team": 7196, "role": null, "group": "Team 7196", "name": "Jane Example",
+      "recognised": true, "firstOfDay": false, "already": true, "firstStamp": "Tu10/27/2026|17:05",
+      "stamp": "Tu10/27/2026|17:40", "scannedUtc": "2026-10-27T22:40:02.9+00:00", "scannedCentral": "2026-10-27T17:40:02.9",
+      "centralZone": "CDT", "centralDate": "2026-10-27", "source": "kiosk", "meetingId": 4, "openedBy": "Andrew Meckley",
+      "dateText": "Tuesday, October 27, 2026", "timeText": "5:40 PM CDT"
+    }
+  ]
+}
