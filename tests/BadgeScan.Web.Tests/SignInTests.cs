@@ -148,6 +148,35 @@ public class SignInTests(TestApp app) : IClassFixture<TestApp>
     }
 
     [Fact]
+    public async Task Cookies_are_secure_behind_https()
+    {
+        // On the server, Cloudflare and Caddy say the visitor used https with X-Forwarded-Proto.
+        // Cookies by hand: a client that keeps cookies hides the Set-Cookie headers.
+        var account = await app.NewAccountAsync();
+        var browser = app.CreateClient(new() { HandleCookies = false, AllowAutoRedirect = false });
+        browser.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+
+        var page = await browser.GetAsync("/login");
+        var pageCookies = page.Headers.GetValues("Set-Cookie").ToList();
+        var token = Regex.Match(await page.Content.ReadAsStringAsync(), "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"").Groups[1].Value;
+        var post = new HttpRequestMessage(HttpMethod.Post, "/login")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Username"] = account.Username, ["Password"] = TestApp.Password, ["__RequestVerificationToken"] = token,
+            }),
+        };
+        post.Headers.Add("Cookie", string.Join("; ", pageCookies.Select(c => c.Split(';')[0])));
+        var signIn = await browser.SendAsync(post);
+        Assert.Equal(HttpStatusCode.Redirect, signIn.StatusCode);
+
+        var cookies = pageCookies.Concat(signIn.Headers.GetValues("Set-Cookie")).ToList();
+        Assert.Contains(cookies, c => c.StartsWith("pv_attendance="));
+        Assert.All(cookies, c => Assert.Contains("secure", c, StringComparison.OrdinalIgnoreCase));
+        Assert.All(cookies, c => Assert.Contains("httponly", c, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Signing_out_ends_the_sign_in()
     {
         var (mentor, _) = await app.StaffAsync();
