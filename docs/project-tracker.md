@@ -4,6 +4,10 @@ This is the badge-scan side of the attendance link, for whoever builds the Proje
 side. Everything here is ready to use: a read-only key, the endpoints below, and sample
 answers in [`samples/`](samples/) to build against before there are real scans.
 
+The Project-Tracker half of the plan (its tables, the decisions to make with a mentor, a
+suggested build order) is in Project-Tracker's
+[`project-tracker/BADGE-ATTENDANCE.md`](https://github.com/MeckMan2025/Project-Tracker/blob/main/project-tracker/BADGE-ATTENDANCE.md).
+
 **Site:** `https://attendance.firstpvrobotics.com`
 
 ## 1. The key
